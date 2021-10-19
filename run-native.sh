@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo $GENNY_KEYCLOAK_URL
+echo $GENNY_SERVICE_USERNAME
+echo $GENNY_SERVICE_PASSWORD
+echo $GENNY_CLIENT_ID
+echo $GENNY_CLIENT_SECRET
+echo $GENNY_REALM
+
+export GENNY_SHOW_VALUES=true; ./target/lauchy-9.8.0-runner
