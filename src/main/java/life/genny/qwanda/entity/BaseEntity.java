@@ -677,4 +677,48 @@ public class BaseEntity extends CodedEntity{
 		return entityAttribute;
 	}
 
+	@JsonbTransient
+	public <T> Optional<T> setValue(final Attribute attribute, T value, Double weight) throws BadDataException {
+		Optional<EntityAttribute> oldValue = this.findEntityAttribute(attribute.getCode());
+
+		Optional<T> result = Optional.empty();
+		if (oldValue.isPresent()) {
+			if (oldValue.get().getLoopValue() != null) {
+				result = Optional.of(oldValue.get().getLoopValue());
+			}
+			EntityAttribute ea = oldValue.get();
+			ea.setValue(value);
+			ea.setWeight(weight);
+		} else {
+			this.addAttribute(attribute, weight, value);
+		}
+		return result;
+	}
+
+	@JsonbTransient
+	public <T> Optional<T> setValue(final Attribute attribute, T value) throws BadDataException {
+		return setValue(attribute, value, 0.0);
+	}
+
+	@JsonbTransient
+	public <T> Optional<T> setValue(final String attributeCode, T value) throws BadDataException {
+		return setValue(attributeCode, value, 0.0);
+	}
+
+	@JsonbTransient
+	public <T> Optional<T> setValue(final String attributeCode, T value, Double weight) throws BadDataException {
+		Optional<EntityAttribute> oldValue = this.findEntityAttribute(attributeCode);
+
+		Optional<T> result = Optional.empty();
+		if (oldValue.isPresent()) {
+			if (oldValue.get().getLoopValue() != null) {
+				result = Optional.of(oldValue.get().getLoopValue());
+			}
+			EntityAttribute ea = oldValue.get();
+			ea.setValue(value);
+			ea.setWeight(weight);
+		}
+		return result;
+	}
+
 }

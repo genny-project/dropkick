@@ -1,5 +1,6 @@
 package life.genny.qwanda.entity;
 
+import javax.json.bind.annotation.JsonbTransient;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -15,17 +16,15 @@ public class EntityEntityId implements java.io.Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-
+	@JsonbTransient
 	private BaseEntity source;
-	
-	
+
 	private String targetCode;
 
+	//@JsonbTransient
 	private Attribute attribute;
-	
 
-
-/**
+	/**
 	 * @return the targetCode
 	 */
 	public String getTargetCode() {
@@ -71,8 +70,6 @@ public class EntityEntityId implements java.io.Serializable {
 ////		this.getTarget().getCode() = target.getCode();
 //	}
 
-	
-	
 	/**
 	 * @return the linkAttribute
 	 */
@@ -126,8 +123,7 @@ public class EntityEntityId implements java.io.Serializable {
 //	}
 //
 //	
-	
-	
+
 //	/**
 //   * @return the getSource().getCode()
 //   */
@@ -170,8 +166,6 @@ public class EntityEntityId implements java.io.Serializable {
 //    this.getAttribute().getCode() = getAttribute().getCode();
 //  }
 
-  
-  
 	// @Override
 	// public boolean equals(final Object o) {
 	// if (this == o) return true;
@@ -192,35 +186,39 @@ public class EntityEntityId implements java.io.Serializable {
 	// return true;
 	// }
 
-    @Override
-    public int hashCode() {
-        HashCodeBuilder hcb = new HashCodeBuilder();
-        hcb.append(attribute);
-        hcb.append(source.getCode());
-        hcb.append(targetCode);
-        return hcb.toHashCode();
-    }      
-       @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof EntityEntityId)) {
-                return false;
-            }
-            EntityEntityId that = (EntityEntityId) obj;
-            EqualsBuilder eb = new EqualsBuilder();
-            eb.append(attribute, that.attribute);
-            eb.append(source.getCode(), that.source.getCode());
-            eb.append(targetCode, that.targetCode);
-            return eb.isEquals();
-        }
-        
+	@Override
+	public int hashCode() {
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		hcb.append(attribute);
+		if (source != null) {
+			hcb.append(source.getCode());
+		}
+		hcb.append(targetCode);
+		return hcb.toHashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof EntityEntityId)) {
+			return false;
+		}
+		EntityEntityId that = (EntityEntityId) obj;
+		EqualsBuilder eb = new EqualsBuilder();
+		eb.append(attribute, that.attribute);
+		if (source != null) {
+			eb.append(source.getCode(), that.source.getCode());
+		}
+		eb.append(targetCode, that.targetCode);
+		return eb.isEquals();
+	}
+
 //        result = (getSource().getCode() != null ? getSource().getCode().hashCode() : 0);
 //        result = 31 * result + (getTargetCode() != null ? getTargetCode().hashCode() : 0);
 //        result = 127 * result + (this.attribute != null ? this.attribute.hashCode() : 0);
 //        return result;
-    
 
 //    
 //    @Override
@@ -247,5 +245,5 @@ public class EntityEntityId implements java.io.Serializable {
 //          return result;
 //      }
 //    
-        
+
 }

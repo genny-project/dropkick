@@ -189,6 +189,55 @@ public class EntityAttribute implements java.io.Serializable, Comparable<Object>
 	public EntityAttribute() {
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param BaseEntity
+	 *            the entity that needs to contain attributes
+	 * @param Attribute
+	 *            the associated Attribute
+	 * @param Weight
+	 *            the weighted importance of this attribute (relative to the other
+	 *            attributes)
+	 */
+	public EntityAttribute(final BaseEntity baseEntity, final Attribute attribute, Double weight) {
+		setBaseEntity(baseEntity);
+		setAttribute(attribute);
+		if (weight == null) {
+			weight = 0.0; // This permits ease of adding attributes and hides
+							// attribute from scoring.
+		}
+		setWeight(weight);
+		setReadonly(false);
+	}
+
+	/**
+	 * Constructor.
+	 * 
+	 * @param BaseEntity
+	 *            the entity that needs to contain attributes
+	 * @param Attribute
+	 *            the associated Attribute
+	 * @param Weight
+	 *            the weighted importance of this attribute (relative to the other
+	 *            attributes)
+	 * @param Value
+	 *            the value associated with this attribute
+	 */
+	public EntityAttribute(final BaseEntity baseEntity, final Attribute attribute, Double weight, final Object value) {
+		setBaseEntity(baseEntity);
+		setAttribute(attribute);
+		this.setPrivacyFlag(attribute.getDefaultPrivacyFlag());
+		if (weight == null) {
+			weight = 0.0; // This permits ease of adding attributes and hides
+							// attribute from scoring.
+		}
+		setWeight(weight);
+		// Assume that Attribute Validation has been performed
+		if (value != null) {
+			setValue(value);
+		}
+	}
 
 	public EntityAttributeId getPk() {
 		return pk;
@@ -985,33 +1034,7 @@ public class EntityAttribute implements java.io.Serializable, Comparable<Object>
 		this.confirmationFlag = confirmationFlag;
 	}
 	
-	/**
-	 * Constructor.
-	 * 
-	 * @param BaseEntity
-	 *            the entity that needs to contain attributes
-	 * @param Attribute
-	 *            the associated Attribute
-	 * @param Weight
-	 *            the weighted importance of this attribute (relative to the other
-	 *            attributes)
-	 * @param Value
-	 *            the value associated with this attribute
-	 */
-	public EntityAttribute(final BaseEntity baseEntity, final Attribute attribute, Double weight, final Object value) {
-		setBaseEntity(baseEntity);
-		setAttribute(attribute);
-		this.setPrivacyFlag(attribute.getDefaultPrivacyFlag());
-		if (weight == null) {
-			weight = 0.0; // This permits ease of adding attributes and hides
-							// attribute from scoring.
-		}
-		setWeight(weight);
-		// Assume that Attribute Validation has been performed
-		if (value != null) {
-			setValue(value);
-		}
-	}
+
 	
 	// @Transient
 	// @JsonIgnore

@@ -16,12 +16,16 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 public class InternalProducer {
 
 
-  @Inject @Channel("blacklists") Emitter<String> blacklists;
-  public Emitter<String> getToBlacklists() {
-    return blacklists;
+
+  @Inject @Channel("webcmds") Emitter<String> webcmds;
+  public Emitter<String> getToWebCmds() {
+    return webcmds;
   }
 
- 
+  @Inject @Channel("webdata") Emitter<String> webdata;
+  public Emitter<String> getToWebData() {
+    return webdata;
+  }
 
 }
 

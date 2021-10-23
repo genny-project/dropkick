@@ -97,7 +97,7 @@ public class Link implements Serializable {
    * @param none
    */
   @SuppressWarnings("unused")
-  private Link() {
+  public Link() {
     // dummy for hibernate
   }
 

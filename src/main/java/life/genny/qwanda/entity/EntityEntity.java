@@ -13,12 +13,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import javax.json.bind.annotation.JsonbTransient;
+
+
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.time.DateUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import life.genny.qwanda.Link;
+
+//@AssociationOverrides({
+//    @AssociationOverride(name = "pk.source", joinColumns = @JoinColumn(name = "SOURCE_ID"))})
 
 
 @RegisterForReflection
@@ -29,7 +35,17 @@ public class EntityEntity implements java.io.Serializable, Comparable<Object> {
 	 */
 	private static final Logger log = Logger.getLogger(EntityEntity.class);
 
-	
+//	@AttributeOverrides({
+//        @AttributeOverride(name = "sourceCode", column = @Column(name = "SOURCE_CODE", nullable = false)),
+//        @AttributeOverride(name = "targetCode", column = @Column(name = "TARGET_CODE", nullable = false)),
+//        @AttributeOverride(name = "attributeCode", column = @Column(name = "LINK_CODE", nullable = false)),
+//        @AttributeOverride(name = "weight", column = @Column(name = "LINK_WEIGHT", nullable = false)),
+//        @AttributeOverride(name = "parentColour", column = @Column(name = "PARENT_COL", nullable = true)),
+//        @AttributeOverride(name = "childColour", column = @Column(name = "CHILD_COL", nullable = true)),
+//        @AttributeOverride(name = "rule", column = @Column(name = "RULE", nullable = true))
+//        
+//	})
+
 	
 	private Link link ;
 	
@@ -299,6 +315,7 @@ public void setLink(Link link) {
 	this.link = link;
 }
 
+@JsonbTransient
   public Date getCreatedDate() {
     final Date out = Date.from(created.atZone(ZoneId.systemDefault()).toInstant());
     return out;
@@ -359,8 +376,15 @@ public void setLink(Link link) {
 
 @SuppressWarnings("unchecked")
 
+@JsonbTransient
   public <T> T getValue() {
-    final String dataType = getPk().getAttribute().getDataType().getClassName();
+    String dataType = null;
+    try {
+		dataType = getPk().getAttribute().getDataType().getClassName();
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
     switch (dataType) {
       case "java.lang.Integer":
         return (T) getValueInteger();
@@ -526,6 +550,7 @@ public <T> void setValue(final Object value) {
 }
 
 
+@JsonbTransient
 public String getAsString() {
 	final String dataType = getPk().getAttribute().getDataType().getClassName();
 	switch (dataType) {
@@ -557,7 +582,7 @@ public String getAsString() {
 
 }
 
-
+@JsonbTransient
 public String getObjectAsString(Object value) {
     if (value instanceof Integer)
       return ""+value;

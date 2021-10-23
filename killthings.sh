@@ -1,3 +1,3 @@
 #!/bin/bash
-jps -l | grep lauchy | cut -d" " -f1 | xargs kill -9
+jps -l | grep dropkick | cut -d" " -f1 | xargs kill -9
 
