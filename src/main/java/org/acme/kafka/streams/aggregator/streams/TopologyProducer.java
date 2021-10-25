@@ -139,7 +139,13 @@ public class TopologyProducer {
 			if ("DD".equals(eventType)) {
 				JsonObject dataJson = json.getJsonObject("data");
 				String sourceCode = dataJson.getString("sourceCode");
-				String attributeCode = json.getString("attributeCode");
+				String attributeCode = null;
+				if (json.containsKey("attributeCode")) {
+					attributeCode = json.getString("attributeCode");
+				} else {
+					log.error("No Attribute code in message "+data);
+				}
+				
 				String token = json.getString("token");
 				BaseEntity sourceBe = fetchBaseEntityFromCache(sourceCode, serviceToken);
 				if (sourceBe != null) {
