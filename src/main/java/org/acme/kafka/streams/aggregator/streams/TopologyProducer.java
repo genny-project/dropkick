@@ -99,7 +99,7 @@ public class TopologyProducer {
 	@ConfigProperty(name = "genny.service.password", defaultValue = "password")
 	String servicePassword;
 
-	@ConfigProperty(name = "genny.oidc.auth-server-url", defaultValue = "https://keycloak.genny.life/auth/realms/genny")
+	@ConfigProperty(name = "quarkus.oidc.auth-server-url", defaultValue = "https://keycloak.genny.life/auth/realms/genny")
 	String keycloakUrl;
 
 	@ConfigProperty(name = "genny.oidc.client-id", defaultValue = "backend")
