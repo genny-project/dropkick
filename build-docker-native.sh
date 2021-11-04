@@ -1,5 +1,6 @@
 #!/bin/bash
 project=`echo "${PWD##*/}" | tr '[:upper:]' '[:lower:]'`
+project=dropkick
 file="src/main/resources/${project}-git.properties"
 org=gennyproject
 function prop() {
