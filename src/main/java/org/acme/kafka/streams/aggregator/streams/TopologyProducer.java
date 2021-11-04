@@ -138,7 +138,14 @@ public class TopologyProducer {
 			String eventType = json.getString("event_type");
 			if ("DD".equals(eventType)) {
 				JsonObject dataJson = json.getJsonObject("data");
-				String sourceCode = dataJson.getString("sourceCode");
+				String sourceCode = null;
+				if (dataJson.containsKey("sourceCode")) {
+					sourceCode = dataJson.getString("sourceCode");
+				}
+				if (sourceCode == null) {
+					log.error("Missing sourceCode in Dropdown Message ["+dataJson.toString()+"]");
+					return false;
+				}
 				String attributeCode = null;
 				if (json.containsKey("attributeCode")) {
 					attributeCode = json.getString("attributeCode");
@@ -216,8 +223,8 @@ public class TopologyProducer {
 
 		try {
 			serviceToken = getToken(serviceUsername, servicePassword);
-			setUpDefs(serviceToken);
 			defUtils.loadAllAttributesIntoCache(serviceToken);
+			setUpDefs(serviceToken);
 		} catch (IOException e) {
 			log.error("Cannot obtain Service Token for " + keycloakUrl + " and " + keycloakRealm);
 		} catch (BadDataException e) {
