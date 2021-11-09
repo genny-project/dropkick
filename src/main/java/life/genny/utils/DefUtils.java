@@ -545,6 +545,10 @@ JsonObject resultJson = null;
 						for (int i = 0; i < size; i++) {
 							String code = codes.getString(i);
 							BaseEntity be = fetchBaseEntityFromCache(code, serviceToken);
+							if (be == null) {
+								log.error("Baseentity "+code+" does not exist in Cache!");
+								continue;
+							}
 							Set<EntityAttribute> nameSet = new HashSet<>();
 							for (EntityAttribute ea : be.getBaseEntityAttributes()) {
 								if ("PRI_NAME".equals(ea.getAttributeCode())) {
