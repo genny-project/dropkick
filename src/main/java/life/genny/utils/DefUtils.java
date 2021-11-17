@@ -289,7 +289,7 @@ public class DefUtils {
 		pageStart += pageSize;
 
 		// Capability Based Conditional Filters
-		searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
+		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
