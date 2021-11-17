@@ -1284,7 +1284,8 @@ public class VertxUtils {
 
             return attributesMsg;
         } catch (Exception e) {
-            log.error("Attributes API not available");
+            log.error("Attributes API not available, exception:" + e.getMessage());
+            e.printStackTrace();
         }
         return null;
     }

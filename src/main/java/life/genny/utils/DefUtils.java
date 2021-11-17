@@ -289,7 +289,7 @@ public class DefUtils {
 		pageStart += pageSize;
 
 		// Capability Based Conditional Filters
-		searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
+		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
@@ -451,7 +451,8 @@ JsonObject resultJson = null;
 
 	            return attributesMsg;
 	        } catch (Exception e) {
-	            log.error("Attributes API not available");
+	            log.error("Attributes API not available, exception:" + e.getMessage());
+	            e.printStackTrace();
 	        }
 	        return null;
 	    }
