@@ -76,7 +76,6 @@ import javax.naming.NamingException;
 import org.acme.kafka.streams.aggregator.model.ApiQwandaService;
 import org.acme.kafka.streams.aggregator.model.ApiService;
 import org.acme.kafka.streams.aggregator.model.ApiUtilsService;
-import org.acme.kafka.streams.aggregator.streams.InternalProducer;
 import org.acme.kafka.streams.aggregator.streams.TopologyProducer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -86,6 +85,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import life.genny.dropkick.live.data.InternalProducer;
 import life.genny.models.GennyToken;
 import life.genny.qwanda.Answer;
 import life.genny.qwanda.Ask;

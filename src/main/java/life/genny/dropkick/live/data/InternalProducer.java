@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.streams;
+package life.genny.dropkick.live.data;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -27,5 +27,10 @@ public class InternalProducer {
     return webdata;
   }
 
+  @Inject @Channel("search_eventsout") Emitter<String> searchEvents;
+  public Emitter<String> getToSearchEvents() {
+    return searchEvents;
+  }
+  
 }
 

@@ -43,6 +43,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
+import life.genny.dropkick.live.data.InternalProducer;
 import life.genny.models.GennyToken;
 import life.genny.qwanda.attribute.Attribute;
 import life.genny.qwanda.attribute.AttributeText;
