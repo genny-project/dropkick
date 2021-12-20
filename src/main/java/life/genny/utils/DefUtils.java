@@ -164,6 +164,7 @@ public class DefUtils {
 
 					Attribute att = getAttribute(attributeCode, serviceToken);
 					String val = json.getString("value");
+					String logic = json.getString("logic");
 
 					String filterStr = null;
 					if (val.contains(":")) {
@@ -238,6 +239,15 @@ public class DefUtils {
 							stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 						}
 						searchBE.addFilter(attributeCode, stringFilter, val);
+
+						if (logic != null && logic.equals("AND")) {
+							searchBE.addAnd(attributeCode, stringFilter, val);
+						} else if (logic != null && logic.equals("OR")) {
+							searchBE.addOr(attributeCode, stringFilter, val);
+						} else {
+							searchBE.addFilter(attributeCode, stringFilter, val);
+						}
+
 					} else {
 						SearchEntity.Filter filter = SearchEntity.Filter.EQUALS;
 						if (filterStr != null) {
