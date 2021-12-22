@@ -174,7 +174,7 @@ public class DefUtils {
 					log.info("DEBUG1");
 					if (!json.containsKey("logic")) {
 						log.info("contains logic");
-						// logic = json.getString("logic");
+						logic = json.getString("logic");
 					}
 					log.info("DEBUG3");
 
