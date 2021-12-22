@@ -167,16 +167,10 @@ public class DefUtils {
 
 					String val = json.getString("value");
 
-					// log.info("DEBUG0: logic null = " + json.containsKey("logic"));
-					log.info("DEBUG0");
-
 					String logic = null;
-					log.info("DEBUG1");
-					if (!json.containsKey("logic")) {
-						log.info("contains logic");
+					if (json.containsKey("logic")) {
 						logic = json.getString("logic");
 					}
-					log.info("DEBUG3");
 
 					String filterStr = null;
 					if (val.contains(":")) {
