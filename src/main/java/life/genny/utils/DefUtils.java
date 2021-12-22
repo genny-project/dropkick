@@ -151,10 +151,12 @@ public class DefUtils {
 
 		JsonArray jsonParms = searchValueJson.getJsonArray("parms");
 		int size = jsonParms.size();
+		log.info("json size = " + size);
 		for (int i = 0; i < size; i++) {
 //		for (Object parmValue : jsonParms) {
 			JsonObject json=null;
 			try {
+				 log.info("Grabbing json");
 				 json = jsonParms.getJsonObject(i);
 				//JsonObject json = (JsonObject) parmValue;
 				 log.info("DEBUG0: attributeCode null = " + json.containsKey("attributeCode"));
