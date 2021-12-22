@@ -159,6 +159,7 @@ public class DefUtils {
 				 log.info("Grabbing json");
 				 json = jsonParms.getJsonObject(i);
 				//JsonObject json = (JsonObject) parmValue;
+				 log.info("Grabbed successfully");
 				 log.info("DEBUG0: attributeCode null = " + json.containsKey("attributeCode"));
 				String attributeCode = json.getString("attributeCode");
 
