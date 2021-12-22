@@ -241,10 +241,13 @@ public class DefUtils {
 						searchBE.addFilter(attributeCode, stringFilter, val);
 
 						if (logic != null && logic.equals("AND")) {
+							log.info("Adding AND filter for " + attributeCode);
 							searchBE.addAnd(attributeCode, stringFilter, val);
 						} else if (logic != null && logic.equals("OR")) {
+							log.info("Adding OR filter for " + attributeCode);
 							searchBE.addOr(attributeCode, stringFilter, val);
 						} else {
+							log.info("Adding REGULAR filter for " + attributeCode);
 							searchBE.addFilter(attributeCode, stringFilter, val);
 						}
 
