@@ -177,6 +177,7 @@ public class DefUtils {
 
 					if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
 						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {  // These represent EntityEntity
+							log.info("Adding CORE/IND DTT filter");
 						// This is used for the sort defaults
 						searchingOnLinks = true;
 
@@ -227,6 +228,7 @@ public class DefUtils {
 								stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 							}
 							// searchBE.addFilter(attributeCode, stringFilter, val);
+							log.info("Adding BE DTT filter");
 
 							if (logic != null && logic.equals("AND")) {
 								log.info("Adding AND filter for " + attributeCode);
@@ -241,20 +243,19 @@ public class DefUtils {
 							
 						}
 						
-						
-						
-						
 					} else if (dataType.getClassName().equals("java.lang.String")) {
 						SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
 						if (filterStr != null) {
 							stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 						}
+						log.info("Adding string DTT filter");
 						searchBE.addFilter(attributeCode, stringFilter, val);					
 					} else {
 						SearchEntity.Filter filter = SearchEntity.Filter.EQUALS;
 						if (filterStr != null) {
 							filter = SearchEntity.convertOperatorToFilter(filterStr);
 						}
+						log.info("Adding Other DTT filter");
 						searchBE.addFilterAsString(attributeCode, filter, val);
 					}
 				}
