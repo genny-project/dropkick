@@ -163,7 +163,13 @@ public class DefUtils {
 				if (attributeCode != null) {
 
 					Attribute att = getAttribute(attributeCode, serviceToken);
+
 					String val = json.getString("value");
+
+					String logic = null;
+					if (json.containsKey("logic")) {
+						logic = json.getString("logic");
+					}
 
 					String filterStr = null;
 					if (val.contains(":")) {
@@ -176,6 +182,7 @@ public class DefUtils {
 
 					if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
 						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {  // These represent EntityEntity
+							log.info("Adding CORE/IND DTT filter");
 						// This is used for the sort defaults
 						searchingOnLinks = true;
 
@@ -225,24 +232,46 @@ public class DefUtils {
 							if (filterStr != null) {
 								stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 							}
-							searchBE.addFilter(attributeCode, stringFilter, val);
+							// searchBE.addFilter(attributeCode, stringFilter, val);
+							log.info("Adding BE DTT filter");
+
+							if (logic != null && logic.equals("AND")) {
+								log.info("Adding AND filter for " + attributeCode);
+								searchBE.addAnd(attributeCode, stringFilter, val);
+							} else if (logic != null && logic.equals("OR")) {
+								log.info("Adding OR filter for " + attributeCode);
+								searchBE.addOr(attributeCode, stringFilter, val);
+							} else {
+								log.info("Adding REGULAR filter for " + attributeCode);
+								searchBE.addFilter(attributeCode, stringFilter, val);
+							}
 							
 						}
-						
-						
-						
 						
 					} else if (dataType.getClassName().equals("java.lang.String")) {
 						SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
 						if (filterStr != null) {
 							stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 						}
-						searchBE.addFilter(attributeCode, stringFilter, val);
+						log.info("Adding string DTT filter");
+						// searchBE.addFilter(attributeCode, stringFilter, val);					
+
+						if (logic != null && logic.equals("AND")) {
+							log.info("Adding AND filter for " + attributeCode);
+							searchBE.addAnd(attributeCode, stringFilter, val);
+						} else if (logic != null && logic.equals("OR")) {
+							log.info("Adding OR filter for " + attributeCode);
+							searchBE.addOr(attributeCode, stringFilter, val);
+						} else {
+							log.info("Adding REGULAR filter for " + attributeCode);
+							searchBE.addFilter(attributeCode, stringFilter, val);
+						}
 					} else {
 						SearchEntity.Filter filter = SearchEntity.Filter.EQUALS;
 						if (filterStr != null) {
 							filter = SearchEntity.convertOperatorToFilter(filterStr);
 						}
+						log.info("Adding Other DTT filter");
 						searchBE.addFilterAsString(attributeCode, filter, val);
 					}
 				}
@@ -266,6 +295,7 @@ public class DefUtils {
 					}
 				}
 			} catch (Exception e) {
+				log.error(e.getStackTrace());
 				// TODO Auto-generated catch block
 				log.error("DROPDOWN :Bad Json Value ---> " + json.toString());
 				continue;
