@@ -157,21 +157,21 @@ public class DefUtils {
 			try {
 				 json = jsonParms.getJsonObject(i);
 				//JsonObject json = (JsonObject) parmValue;
-				 log.info("DEBUG0: attributeCode null = " + json.isNull("attributeCode"));
+				 log.info("DEBUG0: attributeCode null = " + json.containsKey("attributeCode"));
 				String attributeCode = json.getString("attributeCode");
 
 				// Filters
 				if (attributeCode != null) {
 
 					Attribute att = getAttribute(attributeCode, serviceToken);
-					log.info("DEBUG0: value null = " + json.isNull("value"));
+					log.info("DEBUG0: value null = " + json.containsKey("value"));
 
 					String val = json.getString("value");
 
-					log.info("DEBUG0: logic null = " + json.isNull("logic"));
+					log.info("DEBUG0: logic null = " + json.containsKey("logic"));
 
 					String logic = null;
-					if (!json.isNull("logic")) {
+					if (!json.containsKey("logic")) {
 						logic = json.getString("logic");
 					}
 					log.info("DEBUG1");
