@@ -169,6 +169,7 @@ public class DefUtils {
 					if (!json.isNull("logic")) {
 						logic = json.getString("logic");
 					}
+					log.info("DEBUG1");
 
 					String filterStr = null;
 					if (val.contains(":")) {
@@ -176,8 +177,10 @@ public class DefUtils {
 						filterStr = valSplit[0];
 						val = valSplit[1];
 					}
+					log.info("DEBUG2");
 
 					DataType dataType = att.getDataType();
+					log.info("dataType = " + dataType);
 
 					if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
 						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {  // These represent EntityEntity
