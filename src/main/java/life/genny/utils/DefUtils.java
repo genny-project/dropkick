@@ -156,28 +156,27 @@ public class DefUtils {
 //		for (Object parmValue : jsonParms) {
 			JsonObject json=null;
 			try {
-				 log.info("Grabbing json");
 				 json = jsonParms.getJsonObject(i);
 				//JsonObject json = (JsonObject) parmValue;
-				 log.info("Grabbed successfully");
-				 log.info("DEBUG0: attributeCode null = " + json.containsKey("attributeCode"));
 				String attributeCode = json.getString("attributeCode");
 
 				// Filters
 				if (attributeCode != null) {
 
 					Attribute att = getAttribute(attributeCode, serviceToken);
-					log.info("DEBUG0: value null = " + json.containsKey("value"));
 
 					String val = json.getString("value");
 
-					log.info("DEBUG0: logic null = " + json.containsKey("logic"));
+					// log.info("DEBUG0: logic null = " + json.containsKey("logic"));
+					log.info("DEBUG0");
 
 					String logic = null;
-					if (!json.containsKey("logic")) {
-						logic = json.getString("logic");
-					}
 					log.info("DEBUG1");
+					if (!json.containsKey("logic")) {
+						log.info("contains logic");
+						// logic = json.getString("logic");
+					}
+					log.info("DEBUG3");
 
 					String filterStr = null;
 					if (val.contains(":")) {
@@ -185,7 +184,6 @@ public class DefUtils {
 						filterStr = valSplit[0];
 						val = valSplit[1];
 					}
-					log.info("DEBUG2");
 
 					DataType dataType = att.getDataType();
 					log.info("dataType = " + dataType);
@@ -305,6 +303,7 @@ public class DefUtils {
 					}
 				}
 			} catch (Exception e) {
+				log.error(e.getStackTrace());
 				// TODO Auto-generated catch block
 				log.error("DROPDOWN :Bad Json Value ---> " + json.toString());
 				continue;
