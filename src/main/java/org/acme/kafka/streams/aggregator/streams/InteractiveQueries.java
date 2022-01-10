@@ -42,7 +42,7 @@ public class InteractiveQueries {
     private ReadOnlyKeyValueStore<Integer, Aggregation> getWeatherStationStore() {
         while (true) {
             try {
-                return streams.store(TopologyProducer.WEATHER_STATIONS_STORE, QueryableStoreTypes.keyValueStore());
+                return null;//streams.store(TopologyProducer.WEATHER_STATIONS_STORE, QueryableStoreTypes.keyValueStore());
             } catch (InvalidStateStoreException e) {
                 // ignore, store not ready yet
             }
@@ -50,11 +50,11 @@ public class InteractiveQueries {
     }
     
     public GetWeatherStationDataResult getWeatherStationData(int id) {
-        StreamsMetadata metadata = streams.metadataForKey(                  
-                TopologyProducer.WEATHER_STATIONS_STORE,
-                id,
-                Serdes.Integer().serializer()
-        );
+        StreamsMetadata metadata = null; //streams.metadataForKey(                  
+                //TopologyProducer.WEATHER_STATIONS_STORE,
+                //id,
+                //Serdes.Integer().serializer()
+        //);
 
         if (metadata == null || metadata == StreamsMetadata.NOT_AVAILABLE) {
             log.warn("Found no metadata for key "+id);
