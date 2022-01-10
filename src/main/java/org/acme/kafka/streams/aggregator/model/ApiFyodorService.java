@@ -7,7 +7,6 @@ import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-
 @Path("/")
 @RegisterRestClient
 public interface ApiFyodorService {
@@ -17,6 +16,4 @@ public interface ApiFyodorService {
     @Produces("application/json")
     String getSearchResults(final String searchBE, @HeaderParam("Authorization") final String bearertoken);
     
-
-   
 }
