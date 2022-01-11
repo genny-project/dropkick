@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.model;
+package life.genny.dropkick.client;
 
 import java.util.Set;
 
@@ -32,5 +32,4 @@ public interface ApiBridgeService {
     @Produces("application/json")
     Set<String> getBlackLists(@HeaderParam("Authorization") final String bearertoken);
 
-    
 }

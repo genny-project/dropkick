@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.model;
+package life.genny.dropkick.client;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -17,6 +17,4 @@ public interface KeycloakService {
     @Produces("application/json")
     String getAccessToken(@PathParam("realm") final String realm, final String paramMapBody);
     
-
-
 }

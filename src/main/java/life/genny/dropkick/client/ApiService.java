@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.model;
+package life.genny.dropkick.client;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;

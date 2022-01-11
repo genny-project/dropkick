@@ -1,4 +1,4 @@
-package org.acme.kafka.streams.aggregator.model;
+package life.genny.dropkick.client;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -16,8 +16,6 @@ public interface ApiUtilsService {
 	@GET
 	@Path("/realms")
 	@Produces("application/json")
-	String getRealms(
-			@HeaderParam("Authorization") final String bearertoken);
-
+	String getRealms(@HeaderParam("Authorization") final String bearertoken);
 
 }
