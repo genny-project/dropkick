@@ -8,7 +8,6 @@
 	<artifactId>dropkick</artifactId>
 	<version>9.11.0</version>
 	<properties>
-		<genny.version>${project.version}</genny.version>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,6 +20,7 @@
 		<jackson.version>2.13.0</jackson.version>
 		<gson.version>2.8.5</gson.version>
 		<jjwt.version>0.7.0</jjwt.version>
+		<qwanda.version>${project.version}</qwanda.version>
 
 	</properties>
 	<dependencyManagement>
@@ -35,17 +35,8 @@
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
-		<dependency>
-			<groupId>life.genny</groupId>
-			<artifactId>qwandaq</artifactId>
-			<version>${genny.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>xml-apis</artifactId>
-					<groupId>xml-apis</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+		<!-- <dependency> <groupId>life.genny</groupId> <artifactId>qwanda</artifactId> 
+			<version>${qwanda.version}</version> </dependency> -->
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-resteasy</artifactId>
