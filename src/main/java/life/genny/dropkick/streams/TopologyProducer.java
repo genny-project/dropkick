@@ -1,25 +1,9 @@
 package life.genny.dropkick.streams;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -30,14 +14,8 @@ import javax.json.JsonObject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbException;
-import javax.net.ssl.HttpsURLConnection;
 
-import life.genny.dropkick.client.ApiBridgeService;
-import life.genny.dropkick.client.ApiQwandaService;
-import life.genny.dropkick.client.ApiService;
 import life.genny.dropkick.client.KeycloakService;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -57,8 +35,6 @@ import life.genny.qwandaq.attribute.EntityAttribute;
 import life.genny.qwandaq.datatype.DataType;
 import life.genny.qwandaq.entity.BaseEntity;
 import life.genny.qwandaq.entity.SearchEntity;
-import life.genny.qwandaq.exception.BadDataException;
-import life.genny.qwandaq.exception.DebugException;
 import life.genny.qwandaq.message.QDataBaseEntityMessage;
 import life.genny.qwandaq.utils.MergeUtils;
 import life.genny.qwandaq.utils.BaseEntityUtils;
@@ -108,13 +84,13 @@ public class TopologyProducer {
 	@RestClient
 	KeycloakService keycloakService;
 
+	GennyToken serviceToken;
+
 	BaseEntityUtils beUtils;
 
 	QwandaUtils qwandaUtils;
 
 	DefUtils defUtils;
-
-	GennyToken serviceToken;
 
 	Jsonb jsonb = JsonbBuilder.create();
 
@@ -150,7 +126,6 @@ public class TopologyProducer {
 	@Produces
 	public Topology buildTopology() {
 
-
 		// Read the input Kafka topic into a KStream instance.
 		StreamsBuilder builder = new StreamsBuilder();
 		builder
@@ -162,6 +137,8 @@ public class TopologyProducer {
 	}
 
 	public Boolean checkDropDown(String data) {
+
+		log.info("INCOMING MESSAGE - " + data);
 
 		Boolean valid = false;
 		JsonObject json = jsonb.fromJson(data, JsonObject.class);
@@ -318,7 +295,6 @@ public class TopologyProducer {
 		
 		JsonArray jsonParms = searchValueJson.getJsonArray("parms");
 		int size = jsonParms.size();
-		log.info("json size = " + size);
 
 		for (int i = 0; i < size; i++) {
 
@@ -349,57 +325,60 @@ public class TopologyProducer {
 					}
 
 					DataType dataType = att.getDataType();
-					log.info("dataType = " + dataType);
 
 					if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
-						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {  // These represent EntityEntity
+
+						// These represent EntityEntity
+						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {
+
 							log.info("Adding CORE/IND DTT filter");
-						// This is used for the sort defaults
-						searchingOnLinks = true;
+							// This is used for the sort defaults
+							searchingOnLinks = true;
 
-						// For using the search source and target
-						String sourceCode = null;
-						if (json.containsKey("sourceCode")) {
-							sourceCode = json.getString("sourceCode");
-						}
-						String targetCode = null;
-						if (json.containsKey("targetCode")) {
-							targetCode = json.getString("targetCode");
-						}
+							// For using the search source and target
+							String sourceCode = null;
+							if (json.containsKey("sourceCode")) {
+								sourceCode = json.getString("sourceCode");
+							}
+							String targetCode = null;
+							if (json.containsKey("targetCode")) {
+								targetCode = json.getString("targetCode");
+							}
 
-						// These will return True by default if source or target are null
-						if (!MergeUtils.contextsArePresent(sourceCode, ctxMap)) {
-							log.error(ANSIColour.RED+"A Parent value is missing for " + sourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
-							return null;
-						}
-						if (!MergeUtils.contextsArePresent(targetCode, ctxMap)) {
-							log.error(ANSIColour.RED+"A Parent value is missing for " + targetCode + ", Not sending dropdown results"+ANSIColour.RESET);
-							return null;
-						}
+							// These will return True by default if source or target are null
+							if (!MergeUtils.contextsArePresent(sourceCode, ctxMap)) {
+								log.error(ANSIColour.RED+"A Parent value is missing for " + sourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+								return null;
+							}
+							if (!MergeUtils.contextsArePresent(targetCode, ctxMap)) {
+								log.error(ANSIColour.RED+"A Parent value is missing for " + targetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+								return null;
+							}
 
-						// Merge any data for source and target
-						sourceCode = MergeUtils.merge(sourceCode, ctxMap);
-						targetCode = MergeUtils.merge(targetCode, ctxMap);
+							// Merge any data for source and target
+							sourceCode = MergeUtils.merge(sourceCode, ctxMap);
+							targetCode = MergeUtils.merge(targetCode, ctxMap);
 
-						log.info("attributeCode = " + json.getString("attributeCode"));
-						log.info("val = " + val);
-						log.info("link sourceCode = " + sourceCode);
-						log.info("link targetCode = " + targetCode);
+							log.info("attributeCode = " + json.getString("attributeCode"));
+							log.info("val = " + val);
+							log.info("link sourceCode = " + sourceCode);
+							log.info("link targetCode = " + targetCode);
 
-						// Set Source and Target if found it parameter
-						if (sourceCode != null) {
-							searchBE.setSourceCode(sourceCode);
-						}
-						if (targetCode != null) {
-							searchBE.setTargetCode(targetCode);
-						}
+							// Set Source and Target if found it parameter
+							if (sourceCode != null) {
+								searchBE.setSourceCode(sourceCode);
+							}
+							if (targetCode != null) {
+								searchBE.setTargetCode(targetCode);
+							}
 
-						// Set LinkCode and LinkValue
-						searchBE.setLinkCode(att.getCode());
-						searchBE.setLinkValue(val);
+							// Set LinkCode and LinkValue
+							searchBE.setLinkCode(att.getCode());
+							searchBE.setLinkValue(val);
 						} else {
 							// This is a DTT_LINK style that has class = baseentity --> Baseentity_Attribute
-							SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;  // TODO equals?
+							// TODO equals?
+							SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
 							if (filterStr != null) {
 								stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 							}
@@ -416,9 +395,9 @@ public class TopologyProducer {
 								log.info("Adding REGULAR filter for " + attributeCode);
 								searchBE.addFilter(attributeCode, stringFilter, val);
 							}
-							
+
 						}
-						
+
 					} else if (dataType.getClassName().equals("java.lang.String")) {
 						SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
 						if (filterStr != null) {
@@ -493,7 +472,7 @@ public class TopologyProducer {
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
-		searchBE = mergeFilterValueVariables(searchBE, ctxMap);
+		searchBE = this.defUtils.mergeFilterValueVariables(searchBE, ctxMap);
 		if (searchBE == null) {
 			log.error(ANSIColour.RED + "Cannot Perform Search!!!" + ANSIColour.RESET);
 			return null;
@@ -534,211 +513,4 @@ public class TopologyProducer {
 		return msg;
 	}
 	
-	public SearchEntity mergeFilterValueVariables(SearchEntity searchBE, Map<String, Object> ctxMap) {
-
-		for (EntityAttribute ea : searchBE.getBaseEntityAttributes()) {
-			// Iterate all Filters
-			if (ea.getAttributeCode().startsWith("PRI_") || ea.getAttributeCode().startsWith("LNK_")) {
-
-				// Grab the Attribute for this Code, using array in case this is an associated filter
-				String[] attributeCodeArray = ea.getAttributeCode().split("\\.");
-				String attributeCode = attributeCodeArray[attributeCodeArray.length-1];
-				// Fetch the corresponding attribute
-				Attribute att = this.qwandaUtils.getAttribute(attributeCode);
-				DataType dataType = att.getDataType();
-
-				Object attributeFilterValue = ea.getValue();
-				if (attributeFilterValue != null) {
-					// Ensure EntityAttribute Dataype is Correct for Filter
-					Attribute searchAtt = new Attribute(ea.getAttributeCode(), ea.getAttributeName(), dataType);
-					ea.setAttribute(searchAtt);
-					String attrValStr = attributeFilterValue.toString();
-
-					// First Check if Merge is required
-					Boolean requiresMerging = MergeUtils.requiresMerging(attrValStr);
-
-					if (requiresMerging != null && requiresMerging) {
-						// update Map with latest baseentity
-						ctxMap.keySet().forEach(key -> {
-							Object value = ctxMap.get(key);
-							if (value.getClass().equals(BaseEntity.class)) {
-								BaseEntity baseEntity = (BaseEntity) value;
-								ctxMap.put(key, this.beUtils.getBaseEntityByCode(baseEntity.getCode()));
-							}
-						});
-						// Check if contexts are present
-						if (MergeUtils.contextsArePresent(attrValStr, ctxMap)) {
-							// NOTE: HACK, MergeUtils should be taking care of this bracket replacement - Jasper (6/08/2021)
-							Object mergedObj = MergeUtils.wordMerge(attrValStr.replace("[[", "").replace("]]", ""), ctxMap);
-							// Ensure Dataype is Correct, then set Value
-							ea.setValue(mergedObj);
-						} else {
-							log.error(ANSIColour.RED + "Not all contexts are present for " + attrValStr + ANSIColour.RESET);
-							return null;
-						}
-					} else {
-						// This should filter out any values of incorrect datatype
-						ea.setValue(attributeFilterValue);
-					}
-				} else {
-					log.error(ANSIColour.RED + "Value is NULL for entity attribute " + attributeCode + ANSIColour.RESET);
-					return null;
-				}
-			}
-		}
-
-		return searchBE;
-	}
-		
-	public BaseEntity getDEF(final BaseEntity be, final GennyToken userToken) {
-		if (be == null) {
-			log.error("be param is NULL");
-			try {
-				throw new DebugException("BaseEntityUtils: getDEF: The passed BaseEntity is NULL, supplying trace");
-			} catch (DebugException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return null;
-		}
-
-		if (be.getCode().startsWith("DEF_")) {
-			return be;
-		}
-		// Some quick ones
-		if (be.getCode().startsWith("PRJ_")) {
-			BaseEntity defBe = this.defUtils.getDefMap(userToken).get("DEF_PROJECT");
-			return defBe;
-		}
-
-		List<EntityAttribute> isAs = be.findPrefixEntityAttributes("PRI_IS_");
-
-		// remove the non DEF ones
-		/*
-		 * PRI_IS_DELETED PRI_IS_EXPANDABLE PRI_IS_FULL PRI_IS_INHERITABLE PRI_IS_PHONE
-		 * (?) PRI_IS_SKILLS
-		 */
-		Iterator<EntityAttribute> i = isAs.iterator();
-		while (i.hasNext()) {
-			EntityAttribute ea = i.next();
-
-			if (ea.getAttributeCode().startsWith("PRI_IS_APPLIED_")) {
-
-				i.remove();
-			} else {
-				switch (ea.getAttributeCode()) {
-					case "PRI_IS_DELETED":
-					case "PRI_IS_EXPANDABLE":
-					case "PRI_IS_FULL":
-					case "PRI_IS_INHERITABLE":
-					case "PRI_IS_PHONE":
-					case "PRI_IS_AGENT_PROFILE_GRP":
-					case "PRI_IS_BUYER_PROFILE_GRP":
-					case "PRI_IS_EDU_PROVIDER_STAFF_PROFILE_GRP":
-					case "PRI_IS_REFERRER_PROFILE_GRP":
-					case "PRI_IS_SELLER_PROFILE_GRP":
-					case "PRI_IS SKILLS":
-						log.warn("getDEF -> detected non DEFy attributeCode " + ea.getAttributeCode());
-						i.remove();
-						break;
-					case "PRI_IS_DISABLED":
-						log.warn("getDEF -> detected non DEFy attributeCode " + ea.getAttributeCode());
-						// don't remove until we work it out...
-						try {
-							throw new DebugException("Bad DEF " + ea.getAttributeCode());
-						} catch (DebugException e) {
-							e.printStackTrace();
-						}
-						break;
-					case "PRI_IS_LOGBOOK":
-						log.debug("getDEF -> detected non DEFy attributeCode " + ea.getAttributeCode());
-						i.remove();
-
-					default:
-
-				}
-			}
-		}
-
-		if (isAs.size() == 1) {
-			// Easy
-			Map<String, BaseEntity> beMapping = this.defUtils.getDefMap(userToken);
-			String attrCode = isAs.get(0).getAttributeCode();
-
-			String trimedAttrCode = attrCode.substring("PRI_IS_".length());
-
-			BaseEntity defBe = beMapping.get("DEF_" + trimedAttrCode);
-
-			//				BaseEntity defBe = RulesUtils.defs.get(be.getRealm())
-			//						.get("DEF_" + isAs.get(0).getAttributeCode().substring("PRI_IS_".length()));
-			if (defBe == null) {
-				log.error(
-						"No such DEF called " + "DEF_" + isAs.get(0).getAttributeCode().substring("PRI_IS_".length()));
-			}
-			return defBe;
-		} else if (isAs.isEmpty()) {
-			// THIS HANDLES CURRENT BAD BEs
-			// loop through the defs looking for matching prefix
-			for (BaseEntity defBe : this.defUtils.getDefMap(userToken).values()) {
-				String prefix = defBe.getValue("PRI_PREFIX", null);
-				if (prefix == null) {
-					continue;
-				}
-				// LITTLE HACK FOR OHS DOCS, SORRY!
-				if (prefix.equals("DOC") && be.getCode().startsWith("DOC_OHS_")) {
-					continue;
-				}
-				if (be.getCode().startsWith(prefix + "_")) {
-					return defBe;
-				}
-			}
-
-			log.error("NO DEF ASSOCIATED WITH be " + be.getCode());
-			return new BaseEntity("ERR_DEF", "No DEF");
-		} else {
-			// Create sorted merge code
-			String mergedCode = "DEF_" + isAs.stream().sorted(Comparator.comparing(EntityAttribute::getAttributeCode))
-				.map(ea -> ea.getAttributeCode()).collect(Collectors.joining("_"));
-			mergedCode = mergedCode.replaceAll("_PRI_IS_DELETED", "");
-			BaseEntity mergedBe = this.defUtils.getDefMap(userToken).get(mergedCode);
-			if (mergedBe == null) {
-				log.info("Detected NEW Combination DEF - " + mergedCode);
-				// Get primary PRI_IS
-				Optional<EntityAttribute> topDog = be.getHighestEA("PRI_IS_");
-				if (topDog.isPresent()) {
-					String topCode = topDog.get().getAttributeCode().substring("PRI_IS_".length());
-					BaseEntity defTopDog = this.defUtils.getDefMap(userToken).get("DEF_" + topCode);
-					mergedBe = new BaseEntity(mergedCode, mergedCode); // So this combination DEF inherits top dogs name
-					// now copy all the combined DEF eas.
-					for (EntityAttribute isea : isAs) {
-						BaseEntity defEa = this.defUtils.getDefMap(userToken)
-							.get("DEF_" + isea.getAttributeCode().substring("PRI_IS_".length()));
-						if (defEa != null) {
-							for (EntityAttribute ea : defEa.getBaseEntityAttributes()) {
-								try {
-									mergedBe.addAttribute(ea);
-								} catch (BadDataException e) {
-									log.error("Bad data in getDEF ea merge " + mergedCode);
-								}
-							}
-						} else {
-							log.info(
-									"No DEF code -> " + "DEF_" + isea.getAttributeCode().substring("PRI_IS_".length()));
-							return null;
-						}
-					}
-					this.defUtils.getDefMap(userToken).put(mergedCode, mergedBe);
-					return mergedBe;
-
-				} else {
-					log.error("NO DEF EXISTS FOR " + be.getCode());
-					return null;
-				}
-			} else {
-				return mergedBe; // return 'merged' composite
-			}
-		}
-
-	}
-
 }
