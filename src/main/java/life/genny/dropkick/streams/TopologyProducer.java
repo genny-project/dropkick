@@ -456,7 +456,7 @@ public class TopologyProducer {
 					}
 				}
 			} catch (Exception e) {
-				log.error(e.getStackTrace());
+				log.error(e);
 				log.error("DROPDOWN :Bad Json Value ---> " + json.toString());
 				continue;
 			}
