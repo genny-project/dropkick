@@ -80,10 +80,6 @@ public class TopologyProducer {
 	@Inject
 	InternalProducer producer;
 
-	@Inject
-	@RestClient
-	KeycloakService keycloakService;
-
 	GennyToken serviceToken;
 
 	BaseEntityUtils beUtils;
@@ -97,15 +93,15 @@ public class TopologyProducer {
     void onStart(@Observes StartupEvent ev) {
 
 		if (showValues) {
-			log.info("service username :" + serviceUsername);
-			log.info("service password :" + servicePassword);
-			log.info("keycloakUrl      :" + keycloakUrl);
-			log.info("BasekeycloakUrl  :" + baseKeycloakUrl);
-			log.info("keycloak clientId:" + clientId);
-			log.info("keycloak secret  :" + secret);
-			log.info("keycloak realm   :" + keycloakRealm);
-			log.info("api Url          :" + apiUrl);
-			log.info("Def Dropdown Size:" + defaultDropDownSize);
+			log.info("service username  : " + serviceUsername);
+			log.info("service password  : " + servicePassword);
+			log.info("keycloakUrl       : " + keycloakUrl);
+			log.info("BasekeycloakUrl   : " + baseKeycloakUrl);
+			log.info("keycloak clientId : " + clientId);
+			log.info("keycloak secret   : " + secret);
+			log.info("keycloak realm    : " + keycloakRealm);
+			log.info("api Url           : " + apiUrl);
+			log.info("Def Dropdown Size : " + defaultDropDownSize);
 		}
 
 		serviceToken = new KeycloakUtils().getToken(baseKeycloakUrl, keycloakRealm, clientId, secret, serviceUsername, servicePassword, null);
@@ -119,7 +115,6 @@ public class TopologyProducer {
 		defUtils = new DefUtils(beUtils, qwandaUtils);
 		defUtils.initializeDefs();
 
-
 		log.info("[*] Finished Startup!");
     }
 
@@ -130,19 +125,28 @@ public class TopologyProducer {
 		StreamsBuilder builder = new StreamsBuilder();
 		builder
 			.stream("events", Consumed.with(Serdes.String(), Serdes.String()))
-			.filter((k, v) -> checkDropDown(v))
+			.peek((k, v) -> log.debug("Consumed message: " + v))
+			.filter((k, v) -> isValidDropdownMessage(v))
+			.peek((k, v) -> log.debug("Processing valid message: " + v))
+			.mapValues(v -> fetchDropdownResults(v))
+			.filter((k, v) -> v != null)
+			.peek((k, v) -> log.debug("Sending results: " + v))
 			.to("webcmds", Produced.with(Serdes.String(), Serdes.String()));
 
 		return builder.build();
 	}
 
-	public Boolean checkDropDown(String data) {
+	/**
+	* Check if dropdown message is valid and has all necessary fields.
+	*
+	* @param data	Message to check
+	* @return		Boolean value determining validity
+	 */
+	public Boolean isValidDropdownMessage(String data) {
 
-		log.info("INCOMING MESSAGE - " + data);
-
-		Boolean valid = false;
 		JsonObject json = jsonb.fromJson(data, JsonObject.class);
 
+		// Check the event type is a dropdown event
 		if (!json.containsKey("event_type")) {
 			return false;
 		}
@@ -153,28 +157,30 @@ public class TopologyProducer {
 			return false;
 		}
 
-		// TODO: validate token here
+		// Check if a valid token was sent
+		if (!json.containsKey("token")) {
+			return false;
+		}
+
 		String token = json.getString("token");
 
-		JsonObject dataJson = json.getJsonObject("data");
-		String attributeCode = null;
+		try {
+			GennyToken userToken = new GennyToken(token);
+		} catch (Exception e) {
+			log.error("Bad Token sent in dropdown message!");
+			return false;
+		}
 
-		if (json.containsKey("attributeCode")) {
-			attributeCode = json.getString("attributeCode");
-		} else {
+		JsonObject dataJson = json.getJsonObject("data");
+
+		if (!json.containsKey("attributeCode")) {
 			log.error("No Attribute code in message "+data);
+			return false;
 		}
 
 		// Check Source exists
 		if (!dataJson.containsKey("sourceCode")) {
 			log.error("Missing sourceCode in Dropdown Message ["+dataJson.toString()+"]");
-			return false;
-		}
-
-		String sourceCode = dataJson.getString("sourceCode");
-		BaseEntity sourceBe = this.beUtils.getBaseEntityByCode(sourceCode);
-
-		if (sourceBe == null) {
 			return false;
 		}
 
@@ -184,94 +190,99 @@ public class TopologyProducer {
 			return false;
 		}
 
+		// Grab info required to find the DEF
+		String attributeCode = json.getString("attributeCode");
 		String targetCode = dataJson.getString("targetCode");
-		BaseEntity targetBe = this.beUtils.getBaseEntityByCode(targetCode);
+		BaseEntity target = this.beUtils.getBaseEntityByCode(targetCode);
 
-		if (targetBe == null) {
+		if (target == null) {
 			return false;
 		}
 
-		BaseEntity defBe = this.defUtils.getDEF(targetBe);
-		Boolean defDropdownExists = false;
-		/*
-		 * Determine whether there is a DEF attribute and target type that has a new DEF
-		 * search for this combination
-		 */
-		try {
+		// Find the DEF
+		BaseEntity defBE = this.defUtils.getDEF(target);
 
-			defDropdownExists = hasDropdown(attributeCode, defBe);
+		// Check if attribute code exists as a SER for the DEF
+		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attributeCode);
 
-			if (defDropdownExists) {
-
-				log.info("Dropdown for " + attributeCode + " exists");
-
-				String searchText = dataJson.getString("value");
-				String parentCode = dataJson.getString("parentCode");
-				String questionCode = dataJson.getString("questionCode");
-				log.info(attributeCode + ":" + parentCode + ":[" + searchText + "]");
-
-				QDataBaseEntityMessage msg = getDropdownData(token, defBe, sourceBe, targetBe,
-						attributeCode, parentCode, questionCode, searchText, 15);
-
-				String jsonStr = null;
-
-				try {
-					jsonStr = jsonb.toJson(msg);
-					producer.getToWebCmds().send(jsonStr);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (!searchAttribute.isPresent()) {
+			log.info("No attribute exists in " + defBE.getCode() + " for SER_" + attributeCode);
+			return false;
 		}
 
-		return valid;
-	}
+		// Parse search json to object
+		String searchValue = searchAttribute.get().getValueString();
+		JsonObject searchJson = jsonb.fromJson(searchValue, JsonObject.class);
+		log.info("Attribute exists in " + defBE.getCode() + " for SER_" + attributeCode + " --> " + searchValue);
 
-	public Boolean hasDropdown(final String attributeCode, final BaseEntity defBe) throws Exception {
+		if (searchJson.containsKey("enabled")) {
 
-		// Check if attribute code exists as a SER
-		Optional<EntityAttribute> searchAtt = defBe.findEntityAttribute("SER_" + attributeCode); // SER_
-		if (searchAtt.isPresent()) {
-			// temporary enable check
-			String serValue = searchAtt.get().getValueString();
-			log.info("Attribute exists in " + defBe.getCode() + " for SER_" + attributeCode + " --> " + serValue);
-			JsonObject serJson = jsonb.fromJson(serValue, JsonObject.class);
-			if (serJson.containsKey("enabled")) {
-				Boolean isEnabled = serJson.getBoolean("enabled");
-				return isEnabled;
-			} else {
-				log.info("Attribute exists in " + defBe.getCode() + " for SER_" + attributeCode
-						+ " --> but NOT enabled!");
-				return true;
-			}
-		} else {
-			log.info("No attribute exists in " + defBe.getCode() + " for SER_" + attributeCode);
+			Boolean isEnabled = searchJson.getBoolean("enabled");
+			log.info("Search Json Enabled = " + isEnabled);
+
+			return isEnabled;
 		}
-		return false;
 
+		return true;
 	}
 
-	public QDataBaseEntityMessage getDropdownData(String token, BaseEntity defBe, BaseEntity sourceBe,
-			BaseEntity targetBe, final String attrCode, final String parentCode, final String questionCode,
-			final String searchText, Integer dropdownSize) {
+	/**
+	* Fetch and return the results for this dropdown. Will return null
+	* if items can not be fetched for this message. This null must 
+	* be filtered by streams builder.
+	*
+	* @param data
+	* @return
+	 */
+	public String fetchDropdownResults(String data) {
 
-		log.info("DROPDOWN :identified Dropdown Target Baseentity as " + defBe.getCode() + " : " + defBe.getName());
-		log.info("DROPDOWN :identified Dropdown Attribute as " + attrCode);
+		JsonObject jsonStr = jsonb.fromJson(data, JsonObject.class);
+
+		String token = jsonStr.getString("token");
+		JsonObject dataJson = jsonStr.getJsonObject("data");
+
+		String attrCode = jsonStr.getString("attributeCode");
+		String sourceCode = dataJson.getString("sourceCode");
+		String targetCode = dataJson.getString("targetCode");
+		String searchText = dataJson.getString("value");
+		String parentCode = dataJson.getString("parentCode");
+		String questionCode = dataJson.getString("questionCode");
+
+		log.info(attrCode + ":" + parentCode + ":[" + searchText + "]");
+
+		BaseEntity source = this.beUtils.getBaseEntityByCode(sourceCode);
+
+		if (source == null) {
+			log.error("Source Entity is NULL!");
+			return null;
+		}
+
+		BaseEntity target = this.beUtils.getBaseEntityByCode(targetCode);
+
+		if (target == null) {
+			log.error("Target Entity is NULL!");
+			return null;
+		}
+
+		BaseEntity defBE = this.defUtils.getDEF(target);
+
+		log.info("DROPDOWN : Target Baseentity is " + defBE.getCode() + " : " + defBE.getName());
+		log.info("DROPDOWN : Attribute is " + attrCode);
 
 		// Because it is a drop down event we will search the DEF for the search attribute
-		Optional<EntityAttribute> searchAtt = defBe.findEntityAttribute("SER_" + attrCode);
+		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attrCode);
 
-		String serValue = "{\"search\":\"SBE_DROPDOWN\",\"parms\":[{\"attributeCode\":\"PRI_IS_INTERN\",\"value\":\"true\"}]}";
-		if (searchAtt.isPresent()) {
-			serValue = searchAtt.get().getValueString();
-			log.info("DROPDOWN :Search Attribute Value = " + serValue);
+		if (!searchAttribute.isPresent()) {
+			log.error("No present search attribute for " + defBE.getCode());
+			return null;
 		}
+
+		String searchValue = searchAttribute.get().getValueString();
+		log.info("DROPDOWN :Search Attribute Value = " + searchValue);
 
 		JsonObject searchValueJson = null; 
 		try {
-			searchValueJson = jsonb.fromJson(serValue,JsonObject.class);
+			searchValueJson = jsonb.fromJson(searchValue,JsonObject.class);
 		} catch (JsonbException e1) {
 			e1.printStackTrace();
 		}
@@ -286,11 +297,11 @@ public class TopologyProducer {
 
 		Map<String, Object> ctxMap = new ConcurrentHashMap<>();
 
-		if (sourceBe!=null) {
-			ctxMap.put("SOURCE", sourceBe);
+		if (source != null) {
+			ctxMap.put("SOURCE", source);
 		}
-		if (targetBe!=null) {
-			ctxMap.put("TARGET", targetBe);
+		if (target != null) {
+			ctxMap.put("TARGET", target);
 		}
 		
 		JsonArray jsonParms = searchValueJson.getJsonArray("parms");
@@ -336,40 +347,40 @@ public class TopologyProducer {
 							searchingOnLinks = true;
 
 							// For using the search source and target
-							String sourceCode = null;
+							String paramSourceCode = null;
 							if (json.containsKey("sourceCode")) {
-								sourceCode = json.getString("sourceCode");
+								paramSourceCode = json.getString("sourceCode");
 							}
-							String targetCode = null;
+							String paramTargetCode = null;
 							if (json.containsKey("targetCode")) {
-								targetCode = json.getString("targetCode");
+								paramTargetCode = json.getString("targetCode");
 							}
 
 							// These will return True by default if source or target are null
-							if (!MergeUtils.contextsArePresent(sourceCode, ctxMap)) {
-								log.error(ANSIColour.RED+"A Parent value is missing for " + sourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+							if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
+								log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
 								return null;
 							}
-							if (!MergeUtils.contextsArePresent(targetCode, ctxMap)) {
-								log.error(ANSIColour.RED+"A Parent value is missing for " + targetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+							if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
+								log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
 								return null;
 							}
 
 							// Merge any data for source and target
-							sourceCode = MergeUtils.merge(sourceCode, ctxMap);
-							targetCode = MergeUtils.merge(targetCode, ctxMap);
+							paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
+							paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
 
 							log.info("attributeCode = " + json.getString("attributeCode"));
 							log.info("val = " + val);
-							log.info("link sourceCode = " + sourceCode);
-							log.info("link targetCode = " + targetCode);
+							log.info("link paramSourceCode = " + paramSourceCode);
+							log.info("link paramTargetCode = " + paramTargetCode);
 
 							// Set Source and Target if found it parameter
-							if (sourceCode != null) {
-								searchBE.setSourceCode(sourceCode);
+							if (paramSourceCode != null) {
+								searchBE.setSourceCode(paramSourceCode);
 							}
-							if (targetCode != null) {
-								searchBE.setTargetCode(targetCode);
+							if (paramTargetCode != null) {
+								searchBE.setTargetCode(paramTargetCode);
 							}
 
 							// Set LinkCode and LinkValue
@@ -446,7 +457,6 @@ public class TopologyProducer {
 				}
 			} catch (Exception e) {
 				log.error(e.getStackTrace());
-				// TODO Auto-generated catch block
 				log.error("DROPDOWN :Bad Json Value ---> " + json.toString());
 				continue;
 			}
@@ -465,7 +475,6 @@ public class TopologyProducer {
 		searchBE.setRealm(serviceToken.getRealm());
 		searchBE.setPageStart(pageStart);
 		searchBE.setPageSize(pageSize);
-		pageStart += pageSize;
 
 		// Capability Based Conditional Filters
 		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
@@ -473,6 +482,7 @@ public class TopologyProducer {
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
 		searchBE = this.defUtils.mergeFilterValueVariables(searchBE, ctxMap);
+
 		if (searchBE == null) {
 			log.error(ANSIColour.RED + "Cannot Perform Search!!!" + ANSIColour.RESET);
 			return null;
@@ -483,6 +493,7 @@ public class TopologyProducer {
 		QDataBaseEntityMessage msg = new QDataBaseEntityMessage();
 		
 		if (results == null) {
+
 			log.error(ANSIColour.RED + "Dropdown search returned NULL!" + ANSIColour.RESET);
 			return null;
 
@@ -492,7 +503,8 @@ public class TopologyProducer {
 			msg = new QDataBaseEntityMessage(results);
 
 			for (BaseEntity item : msg.getItems()) {
-				if ( item.getValueAsString("PRI_NAME") == null ) {
+
+				if (item.getValueAsString("PRI_NAME") == null ) {
 					log.warn("DROPDOWN : item: " + item.getCode() + " ===== " + item.getValueAsString("PRI_NAME"));
 				} else {
 					log.info("DROPDOWN : item: " + item.getCode() + " ===== " + item.getValueAsString("PRI_NAME"));
@@ -502,6 +514,7 @@ public class TopologyProducer {
 			log.info("DROPDOWN :Loaded NO baseentitys");
 		}
 
+		// Set all required message fields and return msg
 		msg.setParentCode(parentCode);
 		msg.setQuestionCode(questionCode); 
 		msg.setToken(token);
@@ -510,7 +523,7 @@ public class TopologyProducer {
 		msg.setReplace(true);
 		msg.setShouldDeleteLinkedBaseEntities(false);
 
-		return msg;
+		return jsonb.toJson(msg);
 	}
 	
 }
