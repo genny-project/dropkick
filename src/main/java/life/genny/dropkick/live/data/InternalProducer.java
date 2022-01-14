@@ -15,8 +15,6 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 @ApplicationScoped
 public class InternalProducer {
 
-
-
   @Inject @Channel("webcmds") Emitter<String> webcmds;
   public Emitter<String> getToWebCmds() {
     return webcmds;
