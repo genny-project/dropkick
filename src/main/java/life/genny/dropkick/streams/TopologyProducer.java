@@ -32,13 +32,16 @@ import life.genny.qwandaq.models.GennySettings;
 import life.genny.qwandaq.models.GennyToken;
 import life.genny.qwandaq.attribute.Attribute;
 import life.genny.qwandaq.attribute.EntityAttribute;
+import life.genny.qwandaq.data.GennyCache;
 import life.genny.qwandaq.datatype.DataType;
 import life.genny.qwandaq.entity.BaseEntity;
 import life.genny.qwandaq.entity.SearchEntity;
 import life.genny.qwandaq.message.QDataBaseEntityMessage;
 import life.genny.qwandaq.utils.MergeUtils;
 import life.genny.qwandaq.utils.BaseEntityUtils;
+import life.genny.qwandaq.utils.CacheUtils;
 import life.genny.qwandaq.utils.QwandaUtils;
+import life.genny.qwandaq.utils.SearchUtils;
 import life.genny.qwandaq.utils.DefUtils;
 import life.genny.qwandaq.utils.KeycloakUtils;
 
@@ -88,6 +91,9 @@ public class TopologyProducer {
 
 	DefUtils defUtils;
 
+	@Inject
+	GennyCache cache;
+
 	Jsonb jsonb = JsonbBuilder.create();
 
     void onStart(@Observes StartupEvent ev) {
@@ -104,16 +110,16 @@ public class TopologyProducer {
 			log.info("Def Dropdown Size : " + defaultDropDownSize);
 		}
 
+		// Fetch our service token
 		serviceToken = new KeycloakUtils().getToken(baseKeycloakUrl, keycloakRealm, clientId, secret, serviceUsername, servicePassword, null);
 
 		// Init Utility Objects
 		beUtils = new BaseEntityUtils(serviceToken);
 
-		qwandaUtils = new QwandaUtils(serviceToken);
-		qwandaUtils.loadAllAttributes();
-
-		defUtils = new DefUtils(beUtils, qwandaUtils);
-		defUtils.initializeDefs();
+		// Establish connection to cache and init utilities
+		CacheUtils.init(cache);
+		QwandaUtils.init(serviceToken);
+		DefUtils.init(beUtils);
 
 		log.info("[*] Finished Startup!");
     }
@@ -144,26 +150,29 @@ public class TopologyProducer {
 	 */
 	public Boolean isValidDropdownMessage(String data) {
 
+
 		JsonObject json = jsonb.fromJson(data, JsonObject.class);
 
-		// Check the event type is a dropdown event
+		// Check to make sure it has an event type
 		if (!json.containsKey("event_type")) {
 			return false;
 		}
 
 		String eventType = json.getString("event_type");
 
+		// Check the event type is a dropdown event
 		if (!eventType.equals("DD")) {
 			return false;
 		}
 
-		// Check if a valid token was sent
+		// Check if it has a token
 		if (!json.containsKey("token")) {
 			return false;
 		}
 
 		String token = json.getString("token");
 
+		// Check if token is valid
 		try {
 			GennyToken userToken = new GennyToken(token);
 		} catch (Exception e) {
@@ -173,6 +182,7 @@ public class TopologyProducer {
 
 		JsonObject dataJson = json.getJsonObject("data");
 
+		// Check attribute code exists
 		if (!json.containsKey("attributeCode")) {
 			log.error("No Attribute code in message "+data);
 			return false;
@@ -266,8 +276,8 @@ public class TopologyProducer {
 
 		BaseEntity defBE = this.defUtils.getDEF(target);
 
-		log.info("DROPDOWN : Target Baseentity is " + defBE.getCode() + " : " + defBE.getName());
-		log.info("DROPDOWN : Attribute is " + attrCode);
+		log.info("Target DEF is " + defBE.getCode() + " : " + defBE.getName());
+		log.info("Attribute is " + attrCode);
 
 		// Because it is a drop down event we will search the DEF for the search attribute
 		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attrCode);
@@ -278,7 +288,7 @@ public class TopologyProducer {
 		}
 
 		String searchValue = searchAttribute.get().getValueString();
-		log.info("DROPDOWN :Search Attribute Value = " + searchValue);
+		log.info("Search Attribute Value = " + searchValue);
 
 		JsonObject searchValueJson = null; 
 		try {
@@ -393,17 +403,13 @@ public class TopologyProducer {
 							if (filterStr != null) {
 								stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 							}
-							// searchBE.addFilter(attributeCode, stringFilter, val);
 							log.info("Adding BE DTT filter");
 
 							if (logic != null && logic.equals("AND")) {
-								log.info("Adding AND filter for " + attributeCode);
 								searchBE.addAnd(attributeCode, stringFilter, val);
 							} else if (logic != null && logic.equals("OR")) {
-								log.info("Adding OR filter for " + attributeCode);
 								searchBE.addOr(attributeCode, stringFilter, val);
 							} else {
-								log.info("Adding REGULAR filter for " + attributeCode);
 								searchBE.addFilter(attributeCode, stringFilter, val);
 							}
 
@@ -415,16 +421,12 @@ public class TopologyProducer {
 							stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 						}
 						log.info("Adding string DTT filter");
-						// searchBE.addFilter(attributeCode, stringFilter, val);					
 
 						if (logic != null && logic.equals("AND")) {
-							log.info("Adding AND filter for " + attributeCode);
 							searchBE.addAnd(attributeCode, stringFilter, val);
 						} else if (logic != null && logic.equals("OR")) {
-							log.info("Adding OR filter for " + attributeCode);
 							searchBE.addOr(attributeCode, stringFilter, val);
 						} else {
-							log.info("Adding REGULAR filter for " + attributeCode);
 							searchBE.addFilter(attributeCode, stringFilter, val);
 						}
 					} else {
@@ -437,7 +439,7 @@ public class TopologyProducer {
 					}
 				}
 
-				// Sorts
+				// sorts
 				String sortBy = null;
 				if (json.containsKey("sortBy")) {
 					sortBy = json.getString("sortBy");
@@ -448,11 +450,11 @@ public class TopologyProducer {
 					searchBE.addSort(sortBy, sortBy, sortOrder);
 				}
 
-				// Conditionals
+				// conditionals
 				if (json.containsKey("conditions")) {
 					JsonArray conditions = json.getJsonArray("conditions");
 					for (Object cond : conditions) {
-						searchBE.addConditional(attributeCode, cond.toString());
+						searchBE.addConditional(attributeCode, cond.toString().replaceAll("\"", ""));
 					}
 				}
 			} catch (Exception e) {
@@ -462,7 +464,7 @@ public class TopologyProducer {
 			}
 		}
 
-		// Default to sorting by name if no sorts were specified and if not searching for EntityEntitys
+		// default to sorting by name if no sorts were specified and if not searching for EntityEntitys
 		Boolean hasSort = searchBE.getBaseEntityAttributes().stream().anyMatch(item -> item.getAttributeCode().startsWith("SRT_"));
 		if (!hasSort && !searchingOnLinks) {
 			searchBE.addSort("PRI_NAME", "Name", SearchEntity.Sort.ASC);
@@ -477,11 +479,11 @@ public class TopologyProducer {
 		searchBE.setPageSize(pageSize);
 
 		// Capability Based Conditional Filters
-		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
+		searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
-		searchBE = this.defUtils.mergeFilterValueVariables(searchBE, ctxMap);
+		searchBE = DefUtils.mergeFilterValueVariables(searchBE, ctxMap);
 
 		if (searchBE == null) {
 			log.error(ANSIColour.RED + "Cannot Perform Search!!!" + ANSIColour.RESET);
