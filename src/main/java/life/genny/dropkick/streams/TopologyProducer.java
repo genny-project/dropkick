@@ -249,7 +249,11 @@ public class TopologyProducer {
 
 		JsonObject jsonStr = jsonb.fromJson(data, JsonObject.class);
 
+		// create usertoken and use it to update beUtils
 		String token = jsonStr.getString("token");
+		GennyToken userToken = new GennyToken(token);
+		beUtils = new BaseEntityUtils(serviceToken, userToken);
+
 		JsonObject dataJson = jsonStr.getJsonObject("data");
 
 		String attrCode = jsonStr.getString("attributeCode");
