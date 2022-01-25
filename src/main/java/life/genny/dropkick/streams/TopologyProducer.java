@@ -40,6 +40,7 @@ import life.genny.qwandaq.message.QDataBaseEntityMessage;
 import life.genny.qwandaq.utils.MergeUtils;
 import life.genny.qwandaq.utils.BaseEntityUtils;
 import life.genny.qwandaq.utils.CacheUtils;
+import life.genny.qwandaq.utils.CapabilityUtils;
 import life.genny.qwandaq.utils.QwandaUtils;
 import life.genny.qwandaq.utils.SearchUtils;
 import life.genny.qwandaq.utils.DefUtils;
@@ -210,7 +211,7 @@ public class TopologyProducer {
 		}
 
 		// Find the DEF
-		BaseEntity defBE = this.defUtils.getDEF(target);
+		BaseEntity defBE = DefUtils.getDEF(target);
 
 		// Check if attribute code exists as a SER for the DEF
 		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attributeCode);
@@ -279,6 +280,8 @@ public class TopologyProducer {
 		log.info("Target DEF is " + defBE.getCode() + " : " + defBE.getName());
 		log.info("Attribute is " + attrCode);
 
+		CapabilityUtils capabilityUtils = new CapabilityUtils(beUtils);
+
 		// Because it is a drop down event we will search the DEF for the search attribute
 		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attrCode);
 
@@ -324,86 +327,117 @@ public class TopologyProducer {
 			try {
 
 				json = jsonParms.getJsonObject(i);
-				String attributeCode = json.getString("attributeCode");
 
-				// Filters
-				if (attributeCode != null) {
-
-					Attribute att = this.qwandaUtils.getAttribute(attributeCode);
-
-					String val = json.getString("value");
-
-					String logic = null;
-					if (json.containsKey("logic")) {
-						logic = json.getString("logic");
+				// conditionals
+				Boolean conditionsAreMet = true;
+				if (json.containsKey("conditions")) {
+					JsonArray conditions = json.getJsonArray("conditions");
+					for (Object cond : conditions) {
+						if (!capabilityUtils.conditionMet(cond.toString().replaceAll("\"", ""))) {
+							conditionsAreMet = false;
+						}
 					}
+				}
 
-					String filterStr = null;
-					if (val.contains(":")) {
-						String[] valSplit = val.split(":");
-						filterStr = valSplit[0];
-						val = valSplit[1];
-					}
+				if (conditionsAreMet) {
 
-					DataType dataType = att.getDataType();
+					String attributeCode = json.getString("attributeCode");
 
-					if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
+					// Filters
+					if (attributeCode != null) {
 
-						// These represent EntityEntity
-						if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {
+						Attribute att = this.qwandaUtils.getAttribute(attributeCode);
 
-							log.info("Adding CORE/IND DTT filter");
-							// This is used for the sort defaults
-							searchingOnLinks = true;
+						String val = json.getString("value");
 
-							// For using the search source and target
-							String paramSourceCode = null;
-							if (json.containsKey("sourceCode")) {
-								paramSourceCode = json.getString("sourceCode");
+						String logic = null;
+						if (json.containsKey("logic")) {
+							logic = json.getString("logic");
+						}
+
+						String filterStr = null;
+						if (val.contains(":")) {
+							String[] valSplit = val.split(":");
+							filterStr = valSplit[0];
+							val = valSplit[1];
+						}
+
+						DataType dataType = att.getDataType();
+
+						if (dataType.getClassName().equals("life.genny.qwanda.entity.BaseEntity")) {
+
+							// These represent EntityEntity
+							if (attributeCode.equals("LNK_CORE") || attributeCode.equals("LNK_IND")) {
+
+								log.info("Adding CORE/IND DTT filter");
+								// This is used for the sort defaults
+								searchingOnLinks = true;
+
+								// For using the search source and target
+								String paramSourceCode = null;
+								if (json.containsKey("sourceCode")) {
+									paramSourceCode = json.getString("sourceCode");
+								}
+								String paramTargetCode = null;
+								if (json.containsKey("targetCode")) {
+									paramTargetCode = json.getString("targetCode");
+								}
+
+								// These will return True by default if source or target are null
+								if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
+									log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+									return null;
+								}
+								if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
+									log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+									return null;
+								}
+
+								// Merge any data for source and target
+								paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
+								paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
+
+								log.info("attributeCode = " + json.getString("attributeCode"));
+								log.info("val = " + val);
+								log.info("link paramSourceCode = " + paramSourceCode);
+								log.info("link paramTargetCode = " + paramTargetCode);
+
+								// Set Source and Target if found it parameter
+								if (paramSourceCode != null) {
+									searchBE.setSourceCode(paramSourceCode);
+								}
+								if (paramTargetCode != null) {
+									searchBE.setTargetCode(paramTargetCode);
+								}
+
+								// Set LinkCode and LinkValue
+								searchBE.setLinkCode(att.getCode());
+								searchBE.setLinkValue(val);
+							} else {
+								// This is a DTT_LINK style that has class = baseentity --> Baseentity_Attribute
+								// TODO equals?
+								SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
+								if (filterStr != null) {
+									stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
+								}
+								log.info("Adding BE DTT filter");
+
+								if (logic != null && logic.equals("AND")) {
+									searchBE.addAnd(attributeCode, stringFilter, val);
+								} else if (logic != null && logic.equals("OR")) {
+									searchBE.addOr(attributeCode, stringFilter, val);
+								} else {
+									searchBE.addFilter(attributeCode, stringFilter, val);
+								}
+
 							}
-							String paramTargetCode = null;
-							if (json.containsKey("targetCode")) {
-								paramTargetCode = json.getString("targetCode");
-							}
 
-							// These will return True by default if source or target are null
-							if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
-								log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
-								return null;
-							}
-							if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
-								log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
-								return null;
-							}
-
-							// Merge any data for source and target
-							paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
-							paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
-
-							log.info("attributeCode = " + json.getString("attributeCode"));
-							log.info("val = " + val);
-							log.info("link paramSourceCode = " + paramSourceCode);
-							log.info("link paramTargetCode = " + paramTargetCode);
-
-							// Set Source and Target if found it parameter
-							if (paramSourceCode != null) {
-								searchBE.setSourceCode(paramSourceCode);
-							}
-							if (paramTargetCode != null) {
-								searchBE.setTargetCode(paramTargetCode);
-							}
-
-							// Set LinkCode and LinkValue
-							searchBE.setLinkCode(att.getCode());
-							searchBE.setLinkValue(val);
-						} else {
-							// This is a DTT_LINK style that has class = baseentity --> Baseentity_Attribute
-							// TODO equals?
+						} else if (dataType.getClassName().equals("java.lang.String")) {
 							SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
 							if (filterStr != null) {
 								stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
 							}
-							log.info("Adding BE DTT filter");
+							log.info("Adding string DTT filter");
 
 							if (logic != null && logic.equals("AND")) {
 								searchBE.addAnd(attributeCode, stringFilter, val);
@@ -412,30 +446,14 @@ public class TopologyProducer {
 							} else {
 								searchBE.addFilter(attributeCode, stringFilter, val);
 							}
-
-						}
-
-					} else if (dataType.getClassName().equals("java.lang.String")) {
-						SearchEntity.StringFilter stringFilter = SearchEntity.StringFilter.LIKE;
-						if (filterStr != null) {
-							stringFilter = SearchEntity.convertOperatorToStringFilter(filterStr);
-						}
-						log.info("Adding string DTT filter");
-
-						if (logic != null && logic.equals("AND")) {
-							searchBE.addAnd(attributeCode, stringFilter, val);
-						} else if (logic != null && logic.equals("OR")) {
-							searchBE.addOr(attributeCode, stringFilter, val);
 						} else {
-							searchBE.addFilter(attributeCode, stringFilter, val);
+							SearchEntity.Filter filter = SearchEntity.Filter.EQUALS;
+							if (filterStr != null) {
+								filter = SearchEntity.convertOperatorToFilter(filterStr);
+							}
+							log.info("Adding Other DTT filter");
+							searchBE.addFilterAsString(attributeCode, filter, val);
 						}
-					} else {
-						SearchEntity.Filter filter = SearchEntity.Filter.EQUALS;
-						if (filterStr != null) {
-							filter = SearchEntity.convertOperatorToFilter(filterStr);
-						}
-						log.info("Adding Other DTT filter");
-						searchBE.addFilterAsString(attributeCode, filter, val);
 					}
 				}
 
@@ -450,13 +468,6 @@ public class TopologyProducer {
 					searchBE.addSort(sortBy, sortBy, sortOrder);
 				}
 
-				// conditionals
-				if (json.containsKey("conditions")) {
-					JsonArray conditions = json.getJsonArray("conditions");
-					for (Object cond : conditions) {
-						searchBE.addConditional(attributeCode, cond.toString().replaceAll("\"", ""));
-					}
-				}
 			} catch (Exception e) {
 				log.error(e);
 				log.error("DROPDOWN :Bad Json Value ---> " + json.toString());
@@ -479,7 +490,7 @@ public class TopologyProducer {
 		searchBE.setPageSize(pageSize);
 
 		// Capability Based Conditional Filters
-		searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
+		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
