@@ -14,15 +14,14 @@ import javax.json.JsonObject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbException;
+import javax.persistence.EntityManager;
 
-import life.genny.dropkick.client.KeycloakService;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.StartupEvent;
@@ -41,8 +40,8 @@ import life.genny.qwandaq.utils.MergeUtils;
 import life.genny.qwandaq.utils.BaseEntityUtils;
 import life.genny.qwandaq.utils.CacheUtils;
 import life.genny.qwandaq.utils.CapabilityUtils;
+import life.genny.qwandaq.utils.DatabaseUtils;
 import life.genny.qwandaq.utils.QwandaUtils;
-import life.genny.qwandaq.utils.SearchUtils;
 import life.genny.qwandaq.utils.DefUtils;
 import life.genny.qwandaq.utils.KeycloakUtils;
 
@@ -82,15 +81,14 @@ public class TopologyProducer {
 	Integer defaultDropDownSize;
 
 	@Inject
+	EntityManager entityManager;
+
+	@Inject
 	InternalProducer producer;
 
 	GennyToken serviceToken;
 
 	BaseEntityUtils beUtils;
-
-	QwandaUtils qwandaUtils;
-
-	DefUtils defUtils;
 
 	@Inject
 	GennyCache cache;
@@ -117,7 +115,8 @@ public class TopologyProducer {
 		// Init Utility Objects
 		beUtils = new BaseEntityUtils(serviceToken);
 
-		// Establish connection to cache and init utilities
+		// Establish connection to DB and cache, and init utilities
+		DatabaseUtils.init(entityManager);
 		CacheUtils.init(cache);
 		QwandaUtils.init(serviceToken);
 		DefUtils.init(beUtils);
@@ -279,7 +278,7 @@ public class TopologyProducer {
 			return null;
 		}
 
-		BaseEntity defBE = this.defUtils.getDEF(target);
+		BaseEntity defBE = DefUtils.getDEF(target);
 
 		log.info("Target DEF is " + defBE.getCode() + " : " + defBE.getName());
 		log.info("Attribute is " + attrCode);
@@ -350,7 +349,7 @@ public class TopologyProducer {
 					// Filters
 					if (attributeCode != null) {
 
-						Attribute att = this.qwandaUtils.getAttribute(attributeCode);
+						Attribute att = QwandaUtils.getAttribute(attributeCode);
 
 						String val = json.getString("value");
 
@@ -377,29 +376,31 @@ public class TopologyProducer {
 								// This is used for the sort defaults
 								searchingOnLinks = true;
 
-								// For using the search source and target
+								// For using the search source and target and merge any data
 								String paramSourceCode = null;
 								if (json.containsKey("sourceCode")) {
 									paramSourceCode = json.getString("sourceCode");
+
+									// These will return True by default if source or target are null
+									if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
+										log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										return null;
+									}
+
+									paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
 								}
+
 								String paramTargetCode = null;
 								if (json.containsKey("targetCode")) {
 									paramTargetCode = json.getString("targetCode");
-								}
 
-								// These will return True by default if source or target are null
-								if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
-									log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
-									return null;
-								}
-								if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
-									log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
-									return null;
-								}
+									if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
+										log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										return null;
+									}
 
-								// Merge any data for source and target
-								paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
-								paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
+									paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
+								}
 
 								log.info("attributeCode = " + json.getString("attributeCode"));
 								log.info("val = " + val);
@@ -516,8 +517,8 @@ public class TopologyProducer {
 
 		} else if (results.size() > 0) {
 
-			log.info("DROPDOWN :Loaded " + msg.getItems().length + " baseentitys");
 			msg = new QDataBaseEntityMessage(results);
+			log.info("DROPDOWN :Loaded " + msg.getItems().length + " baseentitys");
 
 			for (BaseEntity item : msg.getItems()) {
 
