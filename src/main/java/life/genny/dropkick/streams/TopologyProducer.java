@@ -376,29 +376,31 @@ public class TopologyProducer {
 								// This is used for the sort defaults
 								searchingOnLinks = true;
 
-								// For using the search source and target
+								// For using the search source and target and merge any data
 								String paramSourceCode = null;
 								if (json.containsKey("sourceCode")) {
 									paramSourceCode = json.getString("sourceCode");
+
+									// These will return True by default if source or target are null
+									if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
+										log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										return null;
+									}
+
+									paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
 								}
+
 								String paramTargetCode = null;
 								if (json.containsKey("targetCode")) {
 									paramTargetCode = json.getString("targetCode");
-								}
 
-								// These will return True by default if source or target are null
-								if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
-									log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
-									return null;
-								}
-								if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
-									log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
-									return null;
-								}
+									if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
+										log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										return null;
+									}
 
-								// Merge any data for source and target
-								paramSourceCode = MergeUtils.merge(paramSourceCode, ctxMap);
-								paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
+									paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
+								}
 
 								log.info("attributeCode = " + json.getString("attributeCode"));
 								log.info("val = " + val);
@@ -515,8 +517,8 @@ public class TopologyProducer {
 
 		} else if (results.size() > 0) {
 
-			log.info("DROPDOWN :Loaded " + msg.getItems().length + " baseentitys");
 			msg = new QDataBaseEntityMessage(results);
+			log.info("DROPDOWN :Loaded " + msg.getItems().length + " baseentitys");
 
 			for (BaseEntity item : msg.getItems()) {
 
