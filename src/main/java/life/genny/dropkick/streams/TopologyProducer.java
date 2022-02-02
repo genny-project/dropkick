@@ -74,9 +74,6 @@ public class TopologyProducer {
 	@ConfigProperty(name = "genny.oidc.credentials.secret", defaultValue = "secret")
 	String secret;
 
-	@ConfigProperty(name = "genny.api.url", defaultValue = "http://alyson.genny.life:8280")
-	String apiUrl;
-
 	@ConfigProperty(name = "genny.default.dropdown.size", defaultValue = "25")
 	Integer defaultDropDownSize;
 
@@ -105,7 +102,6 @@ public class TopologyProducer {
 			log.info("keycloak clientId : " + clientId);
 			log.info("keycloak secret   : " + secret);
 			log.info("keycloak realm    : " + keycloakRealm);
-			log.info("api Url           : " + apiUrl);
 			log.info("Def Dropdown Size : " + defaultDropDownSize);
 		}
 
