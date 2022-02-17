@@ -111,7 +111,6 @@ public class TopologyProducer {
 		// Init Utility Objects
 		beUtils = new BaseEntityUtils(serviceToken);
 
-		log.info("FYODOR_SERVICE_API = " + System.getenv("FYODOR_SERVICE_API"));
 		// Establish connection to DB and cache, and init utilities
 		DatabaseUtils.init(entityManager);
 		CacheUtils.init(cache);
