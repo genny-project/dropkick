@@ -514,7 +514,7 @@ public class TopologyProducer {
 		} else if (results.size() > 0) {
 
 			msg = new QDataBaseEntityMessage(results);
-			log.info("DROPDOWN :Loaded " + msg.getItems().length + " baseentitys");
+			log.info("DROPDOWN :Loaded " + msg.getItems().size() + " baseentitys");
 
 			for (BaseEntity item : msg.getItems()) {
 
