@@ -106,7 +106,7 @@ public class TopologyProducer {
 		}
 
 		// Fetch our service token
-		serviceToken = KeycloakUtils.getToken(baseKeycloakUrl, keycloakRealm, clientId, secret, serviceUsername, servicePassword, null);
+		serviceToken = KeycloakUtils.getToken(baseKeycloakUrl, keycloakRealm, clientId, secret, serviceUsername, servicePassword);
 
 		// Init Utility Objects
 		beUtils = new BaseEntityUtils(serviceToken);
