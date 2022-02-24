@@ -555,11 +555,11 @@ public class TopologyProducer {
 		// deserialise msg into JsonObject
 		JsonObject payload = jsonb.fromJson(data, JsonObject.class);
 		String token = payload.getString("token");
-		String bridgeId = payload.getString("bridgeId");
 
 		// grab userToken from message
 		GennyToken userToken = new GennyToken(token);
 		String jti = userToken.getUniqueId();
+		String bridgeId = payload.getString(jti);
 
 		// update bridge switch
 		BridgeSwitch.bridges.put(jti, bridgeId);
