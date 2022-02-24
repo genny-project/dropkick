@@ -20,7 +20,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Produced;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -31,6 +30,7 @@ import life.genny.qwandaq.models.GennySettings;
 import life.genny.qwandaq.models.GennyToken;
 import life.genny.qwandaq.attribute.Attribute;
 import life.genny.qwandaq.attribute.EntityAttribute;
+import life.genny.qwandaq.data.BridgeSwitch;
 import life.genny.qwandaq.data.GennyCache;
 import life.genny.qwandaq.datatype.DataType;
 import life.genny.qwandaq.entity.BaseEntity;
@@ -43,6 +43,7 @@ import life.genny.qwandaq.utils.CapabilityUtils;
 import life.genny.qwandaq.utils.DatabaseUtils;
 import life.genny.qwandaq.utils.QwandaUtils;
 import life.genny.qwandaq.utils.DefUtils;
+import life.genny.qwandaq.utils.KafkaUtils;
 import life.genny.qwandaq.utils.KeycloakUtils;
 
 @ApplicationScoped
@@ -128,12 +129,16 @@ public class TopologyProducer {
 		builder
 			.stream("events", Consumed.with(Serdes.String(), Serdes.String()))
 			.peek((k, v) -> log.debug("Consumed message: " + v))
+
 			.filter((k, v) -> isValidDropdownMessage(v))
 			.peek((k, v) -> log.debug("Processing valid message: " + v))
+
+			.peek((k, v) -> updateBridgeSwitch(v))
 			.mapValues(v -> fetchDropdownResults(v))
+
 			.filter((k, v) -> v != null)
 			.peek((k, v) -> log.debug("Sending results: " + v))
-			.to("webcmds", Produced.with(Serdes.String(), Serdes.String()));
+			.foreach((k, v) -> KafkaUtils.writeMsg("webcmds", v));
 
 		return builder.build();
 	}
@@ -539,5 +544,25 @@ public class TopologyProducer {
 
 		return jsonb.toJson(msg);
 	}
-	
+
+	/**
+	* Update the Dropkick BridgeSwitch records using payload data.
+	*
+	* @param data
+	 */
+	public void updateBridgeSwitch(String data) {
+		
+		// deserialise msg into JsonObject
+		JsonObject payload = jsonb.fromJson(data, JsonObject.class);
+		String token = payload.getString("token");
+		String bridgeId = payload.getString("bridgeId");
+
+		// grab userToken from message
+		GennyToken userToken = new GennyToken(token);
+		String jti = userToken.getUniqueId();
+
+		// update bridge switch
+		BridgeSwitch.bridges.put(jti, bridgeId);
+	}
+
 }
