@@ -24,6 +24,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.StartupEvent;
+import life.genny.dropkick.intf.KafkaBean;
 import life.genny.dropkick.live.data.InternalProducer;
 import life.genny.qwandaq.models.ANSIColour;
 import life.genny.qwandaq.models.GennySettings;
@@ -91,6 +92,9 @@ public class TopologyProducer {
 	@Inject
 	GennyCache cache;
 
+	@Inject
+	KafkaBean kafkaBean;
+
 	Jsonb jsonb = JsonbBuilder.create();
 
     void onStart(@Observes StartupEvent ev) {
@@ -117,6 +121,7 @@ public class TopologyProducer {
 		CacheUtils.init(cache);
 		QwandaUtils.init(serviceToken);
 		DefUtils.init(beUtils);
+		KafkaUtils.init(kafkaBean);
 
 		log.info("[*] Finished Startup!");
     }
