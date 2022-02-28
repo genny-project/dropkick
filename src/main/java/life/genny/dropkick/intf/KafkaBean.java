@@ -43,11 +43,11 @@ public class KafkaBean implements KafkaInterface {
 			String bridgeId = BridgeSwitch.bridges.get(userToken.getUniqueId());
 
 			// Send to a dynamic kafka channel based on the unique BridgeID in the BridgeSwitch
-			OutgoingKafkaRecordMetadata<String> metadata = OutgoingKafkaRecordMetadata.<String>builder()
-				.withTopic(bridgeId + "-" + channel)
-				.build();
+			// OutgoingKafkaRecordMetadata<String> metadata = OutgoingKafkaRecordMetadata.<String>builder()
+			// 	.withTopic(bridgeId + "-" + channel)
+			// 	.build();
 
-			producer.getToWebCmds().send(Message.of(event.toString()).addMetadata(metadata));
+			// producer.getToWebCmds().send(Message.of(event.toString()).addMetadata(metadata));
 
 		} else if ("webdata".equals(channel)) {
 			// TODO: Potentially implement dynamic kafka channel sending here as well
