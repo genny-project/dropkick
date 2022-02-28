@@ -138,7 +138,7 @@ public class TopologyProducer {
 			.filter((k, v) -> isValidDropdownMessage(v))
 			.peek((k, v) -> log.debug("Processing valid message: " + v))
 
-			// .peek((k, v) -> updateBridgeSwitch(v))
+			.peek((k, v) -> updateBridgeSwitch(v))
 			.mapValues(v -> fetchDropdownResults(v))
 
 			.filter((k, v) -> v != null)
