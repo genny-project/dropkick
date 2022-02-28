@@ -37,39 +37,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>life.genny</groupId>
-			<artifactId>qwandaq</artifactId>
+			<artifactId>serviceq</artifactId>
 			<version>${genny.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>xml-apis</artifactId>
-					<groupId>xml-apis</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-resteasy</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-jsonb</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-rest-client</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-resteasy-jackson</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-kafka-streams</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -81,8 +54,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.rest-assured</groupId>
-			<artifactId>rest-assured</artifactId>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>kafka</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -91,37 +64,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>kafka</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.12.0</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.johnzon/johnzon-core -->
-		<dependency>
 			<groupId>org.apache.johnzon</groupId>
 			<artifactId>johnzon-core</artifactId>
 			<version>1.2.15</version>
 		</dependency>
-
-		<!-- <dependency> <groupId>com.google.code.gson</groupId> <artifactId>gson</artifactId> 
-			<version>${gson.version}</version> </dependency> --><!-- <dependency> <groupId>com.fasterxml.jackson.core</groupId> <artifactId>jackson-core</artifactId> 
-			<version>2.13.0</version> </dependency> https://mvnrepository.com/artifact/commons-codec/commons-codec 
-			<dependency> <groupId>commons-codec</groupId> <artifactId>commons-codec</artifactId> 
-			<version>1.15</version> </dependency> -->
-
-		<!-- <dependency> <groupId>io.jsonwebtoken</groupId> <artifactId>jjwt-api</artifactId> 
-			<version>0.10.7</version> </dependency> <dependency> <groupId>io.jsonwebtoken</groupId> 
-			<artifactId>jjwt-impl</artifactId> <version>0.10.7</version> <scope>runtime</scope> 
-			</dependency> <dependency> <groupId>io.jsonwebtoken</groupId> <artifactId>jjwt-jackson</artifactId> 
-			<version>0.10.7</version> <scope>runtime</scope> </dependency> -->
-		<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
-		<!-- <dependency> <groupId>io.jsonwebtoken</groupId> <artifactId>jjwt</artifactId> 
-			<version>${jjwt.version}</version> </dependency> -->
 	</dependencies>
 	<build>
 		<plugins>
