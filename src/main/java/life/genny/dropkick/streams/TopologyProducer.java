@@ -564,7 +564,7 @@ public class TopologyProducer {
 		// grab userToken from message
 		GennyToken userToken = new GennyToken(token);
 		String jti = userToken.getUniqueId();
-		String bridgeId = payload.getString(jti);
+		String bridgeId = "webcmds"; //payload.getString(jti);
 
 		// update bridge switch
 		BridgeSwitch.bridges.put(jti, bridgeId);
