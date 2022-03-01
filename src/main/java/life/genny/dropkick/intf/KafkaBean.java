@@ -35,12 +35,12 @@ public class KafkaBean implements KafkaInterface {
 	public void write(String channel, String payload) { 
 
 		JsonObject event = jsonb.fromJson(payload, JsonObject.class);
-		GennyToken userToken = new GennyToken(event.getString("token"));
+		// GennyToken userToken = new GennyToken(event.getString("token"));
 
 		if ("webcmds".equals(channel)) {
 			producer.getToWebCmds().send(payload);
 
-			String bridgeId = BridgeSwitch.bridges.get(userToken.getUniqueId());
+			// String bridgeId = BridgeSwitch.bridges.get(userToken.getUniqueId());
 
 			// Send to a dynamic kafka channel based on the unique BridgeID in the BridgeSwitch
 			// OutgoingKafkaRecordMetadata<String> metadata = OutgoingKafkaRecordMetadata.<String>builder()
