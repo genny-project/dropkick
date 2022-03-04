@@ -42,87 +42,31 @@ import life.genny.qwandaq.utils.BaseEntityUtils;
 import life.genny.qwandaq.utils.CacheUtils;
 import life.genny.qwandaq.utils.CapabilityUtils;
 import life.genny.qwandaq.utils.DatabaseUtils;
-import life.genny.qwandaq.utils.QwandaUtils;
 import life.genny.qwandaq.utils.DefUtils;
 import life.genny.qwandaq.utils.KafkaUtils;
-import life.genny.qwandaq.utils.KeycloakUtils;
+import life.genny.qwandaq.utils.QwandaUtils;
+import life.genny.serviceq.Service;
 
 @ApplicationScoped
 public class TopologyProducer {
 
 	private static final Logger log = Logger.getLogger(TopologyProducer.class);
 
-	@ConfigProperty(name = "genny.show.values", defaultValue = "false")
-	Boolean showValues;
-
-	@ConfigProperty(name = "genny.keycloak.url", defaultValue = "https://keycloak.gada.io")
-	String baseKeycloakUrl;
-
-	@ConfigProperty(name = "genny.keycloak.realm", defaultValue = "genny")
-	String keycloakRealm;
-
-	@ConfigProperty(name = "genny.service.username", defaultValue = "service")
-	String serviceUsername;
-
-	@ConfigProperty(name = "genny.service.password", defaultValue = "password")
-	String servicePassword;
-
-	@ConfigProperty(name = "quarkus.oidc.auth-server-url", defaultValue = "https://keycloak.genny.life/auth/realms/genny")
-	String keycloakUrl;
-
-	@ConfigProperty(name = "genny.oidc.client-id", defaultValue = "backend")
-	String clientId;
-
-	@ConfigProperty(name = "genny.oidc.credentials.secret", defaultValue = "secret")
-	String secret;
-
 	@ConfigProperty(name = "genny.default.dropdown.size", defaultValue = "25")
 	Integer defaultDropDownSize;
 
 	@Inject
-	EntityManager entityManager;
-
-	@Inject
-	InternalProducer producer;
-
-	GennyToken serviceToken;
-
-	BaseEntityUtils beUtils;
-
-	@Inject
-	GennyCache cache;
-
-	@Inject
-	KafkaBean kafkaBean;
+	Service service;
 
 	Jsonb jsonb = JsonbBuilder.create();
 
     void onStart(@Observes StartupEvent ev) {
 
-		if (showValues) {
-			log.info("service username  : " + serviceUsername);
-			log.info("service password  : " + servicePassword);
-			log.info("keycloakUrl       : " + keycloakUrl);
-			log.info("BasekeycloakUrl   : " + baseKeycloakUrl);
-			log.info("keycloak clientId : " + clientId);
-			log.info("keycloak secret   : " + secret);
-			log.info("keycloak realm    : " + keycloakRealm);
-			log.info("Def Dropdown Size : " + defaultDropDownSize);
+		if (service.showValues()) {
+			log.info("Default dropdown size  : " + defaultDropDownSize);
 		}
 
-		// Fetch our service token
-		serviceToken = KeycloakUtils.getToken(baseKeycloakUrl, keycloakRealm, clientId, secret, serviceUsername, servicePassword);
-
-		// Init Utility Objects
-		beUtils = new BaseEntityUtils(serviceToken);
-
-		// Establish connection to DB and cache, and init utilities
-		DatabaseUtils.init(entityManager);
-		CacheUtils.init(cache);
-		QwandaUtils.init(serviceToken);
-		DefUtils.init(beUtils);
-		KafkaUtils.init(kafkaBean);
-
+		service.fullServiceInit();
 		log.info("[*] Finished Startup!");
     }
 
@@ -155,7 +99,6 @@ public class TopologyProducer {
 	* @return		Boolean value determining validity
 	 */
 	public Boolean isValidDropdownMessage(String data) {
-
 
 		JsonObject json = jsonb.fromJson(data, JsonObject.class);
 
@@ -209,7 +152,7 @@ public class TopologyProducer {
 		// Grab info required to find the DEF
 		String attributeCode = json.getString("attributeCode");
 		String targetCode = dataJson.getString("targetCode");
-		BaseEntity target = this.beUtils.getBaseEntityByCode(targetCode);
+		BaseEntity target = service.getBeUtils().getBaseEntityByCode(targetCode);
 
 		if (target == null) {
 			return false;
@@ -257,7 +200,10 @@ public class TopologyProducer {
 		// create usertoken and use it to update beUtils
 		String token = jsonStr.getString("token");
 		GennyToken userToken = new GennyToken(token);
-		beUtils = new BaseEntityUtils(serviceToken, userToken);
+
+		BaseEntityUtils beUtils = service.getBeUtils();
+		GennyToken serviceToken = beUtils.getServiceToken();
+		beUtils.setGennyToken(userToken);
 
 		JsonObject dataJson = jsonStr.getJsonObject("data");
 
@@ -270,14 +216,14 @@ public class TopologyProducer {
 
 		log.info(attrCode + ":" + parentCode + ":[" + searchText + "]");
 
-		BaseEntity source = this.beUtils.getBaseEntityByCode(sourceCode);
+		BaseEntity source = beUtils.getBaseEntityByCode(sourceCode);
 
 		if (source == null) {
 			log.error("Source Entity is NULL!");
 			return null;
 		}
 
-		BaseEntity target = this.beUtils.getBaseEntityByCode(targetCode);
+		BaseEntity target = beUtils.getBaseEntityByCode(targetCode);
 
 		if (target == null) {
 			log.error("Target Entity is NULL!");
@@ -513,7 +459,7 @@ public class TopologyProducer {
 		}
 
 		// Perform search and evaluate columns
-		List<BaseEntity> results = this.beUtils.getBaseEntitys(searchBE);
+		List<BaseEntity> results = beUtils.getBaseEntitys(searchBE);
 		QDataBaseEntityMessage msg = new QDataBaseEntityMessage();
 		
 		if (results == null) {
