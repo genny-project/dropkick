@@ -40,7 +40,7 @@ public class KafkaBean implements KafkaInterface {
 		if ("webcmds".equals(channel)) {
 			producer.getToWebCmds().send(payload);
 
-			// String bridgeId = BridgeSwitch.bridges.get(userToken.getUniqueId());
+			// String bridgeId = BridgeSwitch.mappings.get(userToken.getUniqueId());
 
 			// Send to a dynamic kafka channel based on the unique BridgeID in the BridgeSwitch
 			// OutgoingKafkaRecordMetadata<String> metadata = OutgoingKafkaRecordMetadata.<String>builder()

@@ -567,7 +567,7 @@ public class TopologyProducer {
 		String bridgeId = "webcmds"; //payload.getString(jti);
 
 		// update bridge switch
-		BridgeSwitch.bridges.put(jti, bridgeId);
+		BridgeSwitch.mappings.put(jti, bridgeId);
 	}
 
 }
