@@ -81,6 +81,8 @@ public class TopologyProducer {
 
 			.filter((k, v) -> v != null)
 			.peek((k, v) -> log.debug("Sending results: " + v))
+
+			// write using KafkaUtils for bridge switching
 			.foreach((k, v) -> KafkaUtils.writeMsg("webcmds", v));
 
 		return builder.build();
