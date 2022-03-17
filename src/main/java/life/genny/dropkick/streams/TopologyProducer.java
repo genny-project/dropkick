@@ -76,7 +76,6 @@ public class TopologyProducer {
 			.filter((k, v) -> isValidDropdownMessage(v))
 			.peek((k, v) -> log.debug("Processing valid message: " + v))
 
-			// .peek((k, v) -> updateBridgeSwitch(v))
 			.mapValues(v -> fetchDropdownResults(v))
 
 			.filter((k, v) -> v != null)
@@ -490,26 +489,6 @@ public class TopologyProducer {
 		msg.setShouldDeleteLinkedBaseEntities(false);
 
 		return jsonb.toJson(msg);
-	}
-
-	/**
-	* Update the Dropkick BridgeSwitch records using payload data.
-	*
-	* @param data
-	 */
-	public void updateBridgeSwitch(String data) {
-		
-		// deserialise msg into JsonObject
-		JsonObject payload = jsonb.fromJson(data, JsonObject.class);
-		String token = payload.getString("token");
-
-		// grab userToken from message
-		GennyToken userToken = new GennyToken(token);
-		String jti = userToken.getUniqueId();
-		String bridgeId = "webcmds"; //payload.getString(jti);
-
-		// update bridge switch
-		BridgeSwitch.mappings.put(jti, bridgeId);
 	}
 
 }
