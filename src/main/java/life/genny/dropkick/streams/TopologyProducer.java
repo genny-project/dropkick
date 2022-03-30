@@ -52,9 +52,15 @@ public class TopologyProducer {
 	@Inject
 	Service service;
 
+	@Inject
+	DefUtils defUtils;
+
+	@Inject
+	QwandaUtils qwandaUtils;
+
 	Jsonb jsonb = JsonbBuilder.create();
 
-    void onStart(@Observes StartupEvent ev) {
+	void onStart(@Observes StartupEvent ev) {
 
 		if (service.showValues()) {
 			log.info("Default dropdown size  : " + defaultDropDownSize);
@@ -62,7 +68,7 @@ public class TopologyProducer {
 
 		service.fullServiceInit();
 		log.info("[*] Finished Startup!");
-    }
+	}
 
 	@Produces
 	public Topology buildTopology() {
@@ -70,28 +76,28 @@ public class TopologyProducer {
 		// Read the input Kafka topic into a KStream instance.
 		StreamsBuilder builder = new StreamsBuilder();
 		builder
-			.stream("events", Consumed.with(Serdes.String(), Serdes.String()))
-			.peek((k, v) -> log.debug("Consumed message: " + v))
+				.stream("events", Consumed.with(Serdes.String(), Serdes.String()))
+				.peek((k, v) -> log.debug("Consumed message: " + v))
 
-			.filter((k, v) -> isValidDropdownMessage(v))
-			.peek((k, v) -> log.debug("Processing valid message: " + v))
+				.filter((k, v) -> isValidDropdownMessage(v))
+				.peek((k, v) -> log.debug("Processing valid message: " + v))
 
-			.mapValues(v -> fetchDropdownResults(v))
+				.mapValues(v -> fetchDropdownResults(v))
 
-			.filter((k, v) -> v != null)
-			.peek((k, v) -> log.debug("Sending results: " + v))
+				.filter((k, v) -> v != null)
+				.peek((k, v) -> log.debug("Sending results: " + v))
 
-			// write using KafkaUtils for bridge switching
-			.foreach((k, v) -> KafkaUtils.writeMsg("webcmds", v));
+				// write using KafkaUtils for bridge switching
+				.foreach((k, v) -> KafkaUtils.writeMsg("webcmds", v));
 
 		return builder.build();
 	}
 
 	/**
-	* Check if dropdown message is valid and has all necessary fields.
-	*
-	* @param data	Message to check
-	* @return		Boolean value determining validity
+	 * Check if dropdown message is valid and has all necessary fields.
+	 *
+	 * @param data Message to check
+	 * @return Boolean value determining validity
 	 */
 	public Boolean isValidDropdownMessage(String data) {
 
@@ -128,19 +134,19 @@ public class TopologyProducer {
 
 		// Check attribute code exists
 		if (!json.containsKey("attributeCode")) {
-			log.error("No Attribute code in message "+data);
+			log.error("No Attribute code in message " + data);
 			return false;
 		}
 
 		// Check Source exists
 		if (!dataJson.containsKey("sourceCode")) {
-			log.error("Missing sourceCode in Dropdown Message ["+dataJson.toString()+"]");
+			log.error("Missing sourceCode in Dropdown Message [" + dataJson.toString() + "]");
 			return false;
 		}
 
 		// Check Target exists
 		if (!dataJson.containsKey("targetCode")) {
-			log.error("Missing targetCode in Dropdown Message ["+dataJson.toString()+"]");
+			log.error("Missing targetCode in Dropdown Message [" + dataJson.toString() + "]");
 			return false;
 		}
 
@@ -154,7 +160,7 @@ public class TopologyProducer {
 		}
 
 		// Find the DEF
-		BaseEntity defBE = DefUtils.getDEF(target);
+		BaseEntity defBE = defUtils.getDEF(target);
 
 		// Check if attribute code exists as a SER for the DEF
 		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attributeCode);
@@ -181,12 +187,12 @@ public class TopologyProducer {
 	}
 
 	/**
-	* Fetch and return the results for this dropdown. Will return null
-	* if items can not be fetched for this message. This null must 
-	* be filtered by streams builder.
-	*
-	* @param data
-	* @return
+	 * Fetch and return the results for this dropdown. Will return null
+	 * if items can not be fetched for this message. This null must
+	 * be filtered by streams builder.
+	 *
+	 * @param data
+	 * @return
 	 */
 	public String fetchDropdownResults(String data) {
 
@@ -225,14 +231,15 @@ public class TopologyProducer {
 			return null;
 		}
 
-		BaseEntity defBE = DefUtils.getDEF(target);
+		BaseEntity defBE = defUtils.getDEF(target);
 
 		log.info("Target DEF is " + defBE.getCode() + " : " + defBE.getName());
 		log.info("Attribute is " + attrCode);
 
 		CapabilityUtils capabilityUtils = new CapabilityUtils(beUtils);
 
-		// Because it is a drop down event we will search the DEF for the search attribute
+		// Because it is a drop down event we will search the DEF for the search
+		// attribute
 		Optional<EntityAttribute> searchAttribute = defBE.findEntityAttribute("SER_" + attrCode);
 
 		if (!searchAttribute.isPresent()) {
@@ -243,20 +250,21 @@ public class TopologyProducer {
 		String searchValue = searchAttribute.get().getValueString();
 		log.info("Search Attribute Value = " + searchValue);
 
-		JsonObject searchValueJson = null; 
+		JsonObject searchValueJson = null;
 		try {
-			searchValueJson = jsonb.fromJson(searchValue,JsonObject.class);
+			searchValueJson = jsonb.fromJson(searchValue, JsonObject.class);
 		} catch (JsonbException e1) {
 			e1.printStackTrace();
 		}
 
 		Integer pageStart = 0;
-		Integer pageSize = searchValueJson.containsKey("dropdownSize") ? searchValueJson.getInt("dropdownSize") : GennySettings.defaultDropDownPageSize;
+		Integer pageSize = searchValueJson.containsKey("dropdownSize") ? searchValueJson.getInt("dropdownSize")
+				: GennySettings.defaultDropDownPageSize;
 		Boolean searchingOnLinks = false;
 
 		SearchEntity searchBE = new SearchEntity("SBE_DROPDOWN", " Search")
-						.addColumn("PRI_CODE", "Code")
-						.addColumn("PRI_NAME", "Name");
+				.addColumn("PRI_CODE", "Code")
+				.addColumn("PRI_NAME", "Name");
 
 		Map<String, Object> ctxMap = new ConcurrentHashMap<>();
 
@@ -266,7 +274,7 @@ public class TopologyProducer {
 		if (target != null) {
 			ctxMap.put("TARGET", target);
 		}
-		
+
 		JsonArray jsonParms = searchValueJson.getJsonArray("parms");
 		int size = jsonParms.size();
 
@@ -296,7 +304,7 @@ public class TopologyProducer {
 					// Filters
 					if (attributeCode != null) {
 
-						Attribute att = QwandaUtils.getAttribute(attributeCode);
+						Attribute att = qwandaUtils.getAttribute(attributeCode);
 
 						String val = json.getString("value");
 
@@ -330,7 +338,8 @@ public class TopologyProducer {
 
 									// These will return True by default if source or target are null
 									if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
-										log.error(ANSIColour.RED+"A Parent value is missing for " + paramSourceCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										log.error(ANSIColour.RED + "A Parent value is missing for " + paramSourceCode
+												+ ", Not sending dropdown results" + ANSIColour.RESET);
 										return null;
 									}
 
@@ -342,7 +351,8 @@ public class TopologyProducer {
 									paramTargetCode = json.getString("targetCode");
 
 									if (!MergeUtils.contextsArePresent(paramTargetCode, ctxMap)) {
-										log.error(ANSIColour.RED+"A Parent value is missing for " + paramTargetCode + ", Not sending dropdown results"+ANSIColour.RESET);
+										log.error(ANSIColour.RED + "A Parent value is missing for " + paramTargetCode
+												+ ", Not sending dropdown results" + ANSIColour.RESET);
 										return null;
 									}
 
@@ -427,15 +437,17 @@ public class TopologyProducer {
 			}
 		}
 
-		// default to sorting by name if no sorts were specified and if not searching for EntityEntitys
-		Boolean hasSort = searchBE.getBaseEntityAttributes().stream().anyMatch(item -> item.getAttributeCode().startsWith("SRT_"));
+		// default to sorting by name if no sorts were specified and if not searching
+		// for EntityEntitys
+		Boolean hasSort = searchBE.getBaseEntityAttributes().stream()
+				.anyMatch(item -> item.getAttributeCode().startsWith("SRT_"));
 		if (!hasSort && !searchingOnLinks) {
 			searchBE.addSort("PRI_NAME", "Name", SearchEntity.Sort.ASC);
 		}
-		
+
 		// Filter by name wildcard provided by user
-		searchBE.addFilter("PRI_NAME", SearchEntity.StringFilter.LIKE,searchText+"%")
-		.addOr("PRI_NAME", SearchEntity.StringFilter.LIKE, "% "+searchText+"%");
+		searchBE.addFilter("PRI_NAME", SearchEntity.StringFilter.LIKE, searchText + "%")
+				.addOr("PRI_NAME", SearchEntity.StringFilter.LIKE, "% " + searchText + "%");
 
 		searchBE.setRealm(serviceToken.getRealm());
 		searchBE.setPageStart(pageStart);
@@ -446,7 +458,7 @@ public class TopologyProducer {
 
 		// Merge required attribute values
 		// NOTE: This should correct any wrong datatypes too
-		searchBE = DefUtils.mergeFilterValueVariables(searchBE, ctxMap);
+		searchBE = defUtils.mergeFilterValueVariables(searchBE, ctxMap);
 
 		if (searchBE == null) {
 			log.error(ANSIColour.RED + "Cannot Perform Search!!!" + ANSIColour.RESET);
@@ -456,7 +468,7 @@ public class TopologyProducer {
 		// Perform search and evaluate columns
 		List<BaseEntity> results = beUtils.getBaseEntitys(searchBE);
 		QDataBaseEntityMessage msg = new QDataBaseEntityMessage();
-		
+
 		if (results == null) {
 
 			log.error(ANSIColour.RED + "Dropdown search returned NULL!" + ANSIColour.RESET);
@@ -469,7 +481,7 @@ public class TopologyProducer {
 
 			for (BaseEntity item : msg.getItems()) {
 
-				if (item.getValueAsString("PRI_NAME") == null ) {
+				if (item.getValueAsString("PRI_NAME") == null) {
 					log.warn("DROPDOWN : item: " + item.getCode() + " ===== " + item.getValueAsString("PRI_NAME"));
 				} else {
 					log.info("DROPDOWN : item: " + item.getCode() + " ===== " + item.getValueAsString("PRI_NAME"));
@@ -481,7 +493,7 @@ public class TopologyProducer {
 
 		// Set all required message fields and return msg
 		msg.setParentCode(parentCode);
-		msg.setQuestionCode(questionCode); 
+		msg.setQuestionCode(questionCode);
 		msg.setToken(token);
 		msg.setLinkCode("LNK_CORE");
 		msg.setLinkValue("ITEMS");
