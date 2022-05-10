@@ -258,8 +258,9 @@ public class TopologyProducer {
 		}
 
 		Integer pageStart = 0;
-		Integer pageSize = searchValueJson.containsKey("dropdownSize") ? searchValueJson.getInt("dropdownSize")
-				: GennySettings.defaultDropDownPageSize;
+		// Integer pageSize = searchValueJson.containsKey("dropdownSize") ? searchValueJson.getInt("dropdownSize")
+		// 		: GennySettings.defaultDropDownPageSize;
+
 		Boolean searchingOnLinks = false;
 
 		SearchEntity searchBE = new SearchEntity("SBE_DROPDOWN", " Search")
@@ -451,7 +452,7 @@ public class TopologyProducer {
 
 		searchBE.setRealm(serviceToken.getRealm());
 		searchBE.setPageStart(pageStart);
-		searchBE.setPageSize(pageSize);
+		// searchBE.setPageSize(pageSize);
 
 		// Capability Based Conditional Filters
 		// searchBE = SearchUtils.evaluateConditionalFilters(beUtils, searchBE);
