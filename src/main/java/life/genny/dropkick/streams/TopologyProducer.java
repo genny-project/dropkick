@@ -246,6 +246,9 @@ public class TopologyProducer {
 
 	private String getJsonStringSafe(JsonObject jsonObject, String code) {
 		try {
+			if (!jsonObject.containsKey(code)) {
+				return null;
+			}
 			if(jsonObject.getValueType() != JsonValue.ValueType.STRING)
 				log.warn("Value: " + jsonObject.getValue(code).toString() + " is not a string!");
 			return jsonObject.getValue(code).toString();
