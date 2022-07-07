@@ -11,6 +11,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbException;
@@ -245,7 +246,9 @@ public class TopologyProducer {
 
 	private String getJsonStringSafe(JsonObject jsonObject, String code) {
 		try {
-			return jsonObject.getString(code);
+			if(jsonObject.getValueType() != JsonValue.ValueType.STRING)
+				log.warn("Value: " + jsonObject.getValue(code).toString() + " is not a string!");
+			return jsonObject.getValue(code).toString();
 		} catch(NullPointerException e) {
 			log.error(ANSIColour.RED + "===============================" + ANSIColour.RESET);
 			log.error(ANSIColour.RED + "Failed to find value: " + code + ANSIColour.RESET);
