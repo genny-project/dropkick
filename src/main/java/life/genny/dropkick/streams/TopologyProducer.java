@@ -164,7 +164,7 @@ public class TopologyProducer {
 			return false;
 		}
 
-		String eventType = json.getString("event_type");
+		String eventType = getJsonStringSafe(json, "event_type");
 
 		// Check the event type is a dropdown event
 		if (!eventType.equals("DD")) {
@@ -176,7 +176,7 @@ public class TopologyProducer {
 			return false;
 		}
 
-		String token = json.getString("token");
+		String token = getJsonStringSafe(json, "token");
 
 		// Check if token is valid
 		try {
@@ -207,8 +207,8 @@ public class TopologyProducer {
 		}
 
 		// Grab info required to find the DEF
-		String attributeCode = json.getString("attributeCode");
-		String targetCode = dataJson.getString("targetCode");
+		String attributeCode = getJsonStringSafe(json, "attributeCode");
+		String targetCode = getJsonStringSafe(dataJson, "targetCode");
 		BaseEntity target = this.beUtils.getBaseEntityByCode(targetCode);
 
 		if (target == null) {
@@ -242,6 +242,19 @@ public class TopologyProducer {
 		return true;
 	}
 
+
+	private String getJsonStringSafe(JsonObject jsonObject, String code) {
+		try {
+			return jsonObject.getString(code);
+		} catch(NullPointerException e) {
+			log.error(ANSIColour.RED + "===============================" + ANSIColour.RESET);
+			log.error(ANSIColour.RED + "Failed to find value: " + code + ANSIColour.RESET);
+			log.error(ANSIColour.RED + "Data: " + jsonObject.toString() + ANSIColour.RESET);
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	/**
 	* Fetch and return the results for this dropdown. Will return null
 	* if items can not be fetched for this message. This null must 
@@ -255,18 +268,18 @@ public class TopologyProducer {
 		JsonObject jsonStr = jsonb.fromJson(data, JsonObject.class);
 
 		// create usertoken and use it to update beUtils
-		String token = jsonStr.getString("token");
+		String token = getJsonStringSafe(jsonStr, "token");
 		GennyToken userToken = new GennyToken(token);
 		beUtils = new BaseEntityUtils(serviceToken, userToken);
 
 		JsonObject dataJson = jsonStr.getJsonObject("data");
 
-		String attrCode = jsonStr.getString("attributeCode");
-		String sourceCode = dataJson.getString("sourceCode");
-		String targetCode = dataJson.getString("targetCode");
-		String searchText = dataJson.getString("value");
-		String parentCode = dataJson.getString("parentCode");
-		String questionCode = dataJson.getString("questionCode");
+		String attrCode = getJsonStringSafe(dataJson, "attributeCode");
+		String sourceCode = getJsonStringSafe(dataJson, "sourceCode");
+		String targetCode = getJsonStringSafe(dataJson, "targetCode");
+		String searchText = getJsonStringSafe(dataJson, "value");
+		String parentCode = getJsonStringSafe(dataJson, "parentCode");
+		String questionCode = getJsonStringSafe(dataJson, "questionCode");
 
 		log.info(attrCode + ":" + parentCode + ":[" + searchText + "]");
 
@@ -350,14 +363,14 @@ public class TopologyProducer {
 
 				if (conditionsAreMet) {
 
-					String attributeCode = json.getString("attributeCode");
+					String attributeCode = getJsonStringSafe(json, "attributeCode");
 
 					// Filters
 					if (attributeCode != null) {
 
 						Attribute att = QwandaUtils.getAttribute(attributeCode);
 
-						String val = json.getString("value");
+						String val = getJsonStringSafe(json, "value");
 
 						String logic = null;
 						if (json.containsKey("logic")) {
@@ -385,7 +398,7 @@ public class TopologyProducer {
 								// For using the search source and target and merge any data
 								String paramSourceCode = null;
 								if (json.containsKey("sourceCode")) {
-									paramSourceCode = json.getString("sourceCode");
+									paramSourceCode = getJsonStringSafe(json, "sourceCode");
 
 									// These will return True by default if source or target are null
 									if (!MergeUtils.contextsArePresent(paramSourceCode, ctxMap)) {
@@ -408,7 +421,7 @@ public class TopologyProducer {
 									paramTargetCode = MergeUtils.merge(paramTargetCode, ctxMap);
 								}
 
-								log.info("attributeCode = " + json.getString("attributeCode"));
+								log.info("attributeCode = " + getJsonStringSafe(json, "attributeCode"));
 								log.info("val = " + val);
 								log.info("link paramSourceCode = " + paramSourceCode);
 								log.info("link paramTargetCode = " + paramTargetCode);
@@ -474,7 +487,7 @@ public class TopologyProducer {
 					sortBy = json.getString("sortBy");
 				}
 				if (sortBy != null) {
-					String order = json.getString("order");
+					String order = getJsonStringSafe(json, "order");
 					SearchEntity.Sort sortOrder = order.equals("DESC") ? SearchEntity.Sort.DESC : SearchEntity.Sort.ASC;
 					searchBE.addSort(sortBy, sortBy, sortOrder);
 				}
@@ -559,7 +572,7 @@ public class TopologyProducer {
 		
 		// deserialise msg into JsonObject
 		JsonObject payload = jsonb.fromJson(data, JsonObject.class);
-		String token = payload.getString("token");
+		String token = getJsonStringSafe(payload, "token");
 
 		// grab userToken from message
 		GennyToken userToken = new GennyToken(token);
