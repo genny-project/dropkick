@@ -249,14 +249,16 @@ public class TopologyProducer {
 			if (!jsonObject.containsKey(code)) {
 				return null;
 			}
-			if(jsonObject.getValueType() != JsonValue.ValueType.STRING)
-				log.warn("Value: " + jsonObject.getString(code) + " is not a string!");
+
 			return jsonObject.getString(code);
 		} catch(NullPointerException e) {
 			log.error(ANSIColour.RED + "===============================" + ANSIColour.RESET);
 			log.error(ANSIColour.RED + "Failed to find value: " + code + ANSIColour.RESET);
-			log.error(ANSIColour.RED + "Data: " + jsonObject.toString() + ANSIColour.RESET);
+			log.error(ANSIColour.RED + "Data: " + jsonObject + ANSIColour.RESET);
 			e.printStackTrace();
+			return null;
+		} catch(ClassCastException e) {
+			log.error("Could not retrieve string from target: [" + code + "] in data: " + jsonObject);
 			return null;
 		}
 	}
