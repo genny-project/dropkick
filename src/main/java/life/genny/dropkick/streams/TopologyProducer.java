@@ -247,6 +247,7 @@ public class TopologyProducer {
 	private String getJsonStringSafe(JsonObject jsonObject, String code) {
 		try {
 			if (!jsonObject.containsKey(code)) {
+				log.error("Could not find code: [" + code + "] in Object: " + jsonObject);
 				return null;
 			}
 
