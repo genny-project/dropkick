@@ -261,12 +261,16 @@ public class TopologyProducer {
 
 		JsonObject dataJson = jsonStr.getJsonObject("data");
 
+		String searchText = null;
 		String attrCode = jsonStr.getString("attributeCode");
 		String sourceCode = dataJson.getString("sourceCode");
 		String targetCode = dataJson.getString("targetCode");
-		String searchText = dataJson.getString("value");
+		if (dataJson.containsKey("value")) {
+			searchText = dataJson.getString("value");
+		}
 		String parentCode = dataJson.getString("parentCode");
 		String questionCode = dataJson.getString("questionCode");
+
 
 		log.info(attrCode + ":" + parentCode + ":[" + searchText + "]");
 
