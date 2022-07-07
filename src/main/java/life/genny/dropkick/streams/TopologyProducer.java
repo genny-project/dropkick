@@ -276,13 +276,16 @@ public class TopologyProducer {
 		beUtils = new BaseEntityUtils(serviceToken, userToken);
 
 		JsonObject dataJson = jsonStr.getJsonObject("data");
+		String searchText = null;
+		String attrCode = jsonStr.getString("attributeCode");
+		String sourceCode = dataJson.getString("sourceCode");
+		String targetCode = dataJson.getString("targetCode");
+		if (dataJson.containsKey("value")) {
+			searchText = dataJson.getString("value");
+		}
+		String parentCode = dataJson.getString("parentCode");
+		String questionCode = dataJson.getString("questionCode");
 
-		String attrCode = getJsonStringSafe(dataJson, "attributeCode");
-		String sourceCode = getJsonStringSafe(dataJson, "sourceCode");
-		String targetCode = getJsonStringSafe(dataJson, "targetCode");
-		String searchText = getJsonStringSafe(dataJson, "value");
-		String parentCode = getJsonStringSafe(dataJson, "parentCode");
-		String questionCode = getJsonStringSafe(dataJson, "questionCode");
 
 		log.info(attrCode + ":" + parentCode + ":[" + searchText + "]");
 
