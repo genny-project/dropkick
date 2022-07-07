@@ -273,7 +273,7 @@ public class TopologyProducer {
 	* @return
 	 */
 	public String fetchDropdownResults(String data) {
-
+		log.info("Incoming Dropdown Message: " + data);
 		JsonObject jsonStr = jsonb.fromJson(data, JsonObject.class);
 
 		// create usertoken and use it to update beUtils
