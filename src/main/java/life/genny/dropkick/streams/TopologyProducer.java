@@ -250,8 +250,8 @@ public class TopologyProducer {
 				return null;
 			}
 			if(jsonObject.getValueType() != JsonValue.ValueType.STRING)
-				log.warn("Value: " + jsonObject.getValue(code).toString() + " is not a string!");
-			return jsonObject.getValue(code).toString();
+				log.warn("Value: " + jsonObject.getString(code) + " is not a string!");
+			return jsonObject.getString(code);
 		} catch(NullPointerException e) {
 			log.error(ANSIColour.RED + "===============================" + ANSIColour.RESET);
 			log.error(ANSIColour.RED + "Failed to find value: " + code + ANSIColour.RESET);
