@@ -276,8 +276,6 @@ public class TopologyProducer {
 		log.info("Incoming Dropdown Message: " + data);
 		JsonObject jsonStr = jsonb.fromJson(data, JsonObject.class);
 
-
-
 		// create usertoken and use it to update beUtils
 		String token = getJsonStringSafe(jsonStr, "token");
 		GennyToken userToken = new GennyToken(token);
@@ -285,7 +283,7 @@ public class TopologyProducer {
 
 		JsonObject dataJson = jsonStr.getJsonObject("data");
 		String searchText = null;
-		String attrCode =dataJson.getString("attributeCode");
+		String attrCode =jsonStr.getString("attributeCode");
 		String sourceCode = getJsonStringSafe(dataJson, "sourceCode");
 		String targetCode = getJsonStringSafe(dataJson, "targetCode");
 		searchText = getJsonStringSafe(dataJson, "value");
